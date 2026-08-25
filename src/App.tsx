@@ -1,45 +1,73 @@
-import { useState } from 'react'
-import { Button, Card, CardContent, Typography, Container, Box, Chip } from '@mui/material'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import { useState, useEffect } from 'react'
+import IconButton from '@mui/material/IconButton'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
+
+export function getInitialDarkMode(): boolean {
+  const saved = sessionStorage.getItem('darkMode')
+  if (saved !== null) {
+    return saved === 'true'
+  }
+
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return true
+    }
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return false
+    }
+  }
+
+  return false
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode)
+
+  useEffect(() => {
+    sessionStorage.setItem('darkMode', darkMode ? 'true' : 'false')
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
+
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev)
+  }
 
   return (
-    <Container maxWidth="md" className="py-10">
-      <Box className="flex flex-col items-center gap-6 text-center">
-        <Typography variant="h3" component="h1" className="font-bold text-slate-800">
-          project03frontend
-        </Typography>
-        <Typography variant="subtitle1" className="text-slate-600">
-          Vite + React + Vitest + Tailwind CSS + Material UI
-        </Typography>
-
-        <Box className="flex flex-wrap justify-center gap-2 my-4">
-          <Chip icon={<CheckCircleIcon />} label="Vite" color="primary" />
-          <Chip icon={<CheckCircleIcon />} label="Vitest" color="secondary" />
-          <Chip icon={<CheckCircleIcon />} label="Tailwind CSS" color="success" />
-          <Chip icon={<CheckCircleIcon />} label="Material UI" color="info" />
-        </Box>
-
-        <Card variant="outlined" className="w-full max-w-sm shadow-md">
-          <CardContent className="flex flex-col items-center p-6 space-y-4">
-            <Typography variant="h6" className="text-gray-700">
-              Interactive Test Component
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setCount((c) => c + 1)}
-              className="bg-blue-600 hover:bg-blue-700"
-              data-testid="counter-button"
-            >
-              Count is {count}
-            </Button>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+      <header
+        className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50 shadow-sm"
+        style={{ height: '4rem' }}
+        data-testid="header"
+      >
+        <div className="flex items-center justify-start flex-1" data-testid="header-left">
+          <IconButton
+            onClick={toggleDarkMode}
+            aria-label="toggle dark mode"
+            data-testid="dark-mode-toggle"
+            color="inherit"
+          >
+            {darkMode ? (
+              <LightModeIcon data-testid="light-icon" />
+            ) : (
+              <DarkModeIcon data-testid="dark-icon" />
+            )}
+          </IconButton>
+        </div>
+        <div className="flex items-center justify-center flex-1 text-center font-medium" data-testid="header-center">
+          Header Center
+        </div>
+        <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
+          Header Right
+        </div>
+      </header>
+      <main className="pt-[4rem] p-6">
+      </main>
+    </div>
   )
 }
 
