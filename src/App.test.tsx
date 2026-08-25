@@ -1,6 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import App from './App'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import App, { ENDPOINT_URL, COUNTDOWN_KEY, TWENTY_FOUR_HOURS_MS } from './App'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as dbModule from './utils/db'
 
 describe('App & Header Dark Mode', () => {
   beforeEach(() => {
@@ -17,12 +18,19 @@ describe('App & Header Dark Mode', () => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     }))
+
+    // Prevent unhandled async state updates
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue({ updateTime: '1', categories: [] })
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('renders static header with height 4rem and 3 distinct sides (left, center, right)', () => {
+  it('renders static header with height 4rem and 3 distinct sides (left, center, right)', async () => {
     render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('header')).toBeInTheDocument()
+    })
     const header = screen.getByTestId('header')
-    expect(header).toBeInTheDocument()
     expect(header).toHaveStyle({ height: '4rem' })
 
     const left = screen.getByTestId('header-left')
@@ -34,23 +42,28 @@ describe('App & Header Dark Mode', () => {
     expect(right).toBeInTheDocument()
   })
 
-  it('places dark mode toggle button on the left side of the header', () => {
+  it('places dark mode toggle button on the left side of the header', async () => {
     render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('header-left')).toBeInTheDocument()
+    })
     const leftSide = screen.getByTestId('header-left')
     const toggleBtn = screen.getByTestId('dark-mode-toggle')
 
     expect(leftSide).toContainElement(toggleBtn)
   })
 
-  it('defaults to light mode when sessionStorage is empty and OS has no dark preference', () => {
+  it('defaults to light mode when sessionStorage is empty and OS has no dark preference', async () => {
     render(<App />)
-    expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
+    })
     expect(screen.queryByTestId('light-icon')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
-  it('uses OS preference when darkMode is not detected in sessionStorage', () => {
+  it('uses OS preference when darkMode is not detected in sessionStorage', async () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-color-scheme: dark)',
       media: query,
@@ -63,14 +76,15 @@ describe('App & Header Dark Mode', () => {
     }))
 
     render(<App />)
-    expect(screen.getByTestId('light-icon')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('light-icon')).toBeInTheDocument()
+    })
     expect(screen.queryByTestId('dark-icon')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('darkMode')).toBe('true')
     expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
-  it('uses sessionStorage preference over OS preference when darkMode is set in sessionStorage', () => {
-    // OS prefers dark
+  it('uses sessionStorage preference over OS preference when darkMode is set in sessionStorage', async () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-color-scheme: dark)',
       media: query,
@@ -82,35 +96,172 @@ describe('App & Header Dark Mode', () => {
       dispatchEvent: vi.fn(),
     }))
 
-    // But sessionStorage has darkMode set to 'false'
     sessionStorage.setItem('darkMode', 'false')
 
     render(<App />)
-    expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
+    })
     expect(sessionStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
-  it('toggles dark mode when clicking the toggle button and updates sessionStorage and icons', () => {
+  it('toggles dark mode when clicking the toggle button and updates sessionStorage and icons', async () => {
     render(<App />)
+    await waitFor(() => {
+      expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
+    })
     const toggleBtn = screen.getByTestId('dark-mode-toggle')
 
-    // Initial state (light mode)
-    expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     expect(sessionStorage.getItem('darkMode')).toBe('false')
 
-    // Click to toggle to dark mode
     fireEvent.click(toggleBtn)
     expect(screen.getByTestId('light-icon')).toBeInTheDocument()
     expect(screen.queryByTestId('dark-icon')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('darkMode')).toBe('true')
     expect(document.documentElement.classList.contains('dark')).toBe(true)
 
-    // Click again to toggle back to light mode
     fireEvent.click(toggleBtn)
     expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     expect(screen.queryByTestId('light-icon')).not.toBeInTheDocument()
     expect(sessionStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
+  })
+})
+
+describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
+  const mockInitialData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    categories: ['POPS & ANIME', 'niconico & VOCALOID', 'EASTERN Project'],
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  it('Requirement 1: Calls endpoint on first page load, saves to IndexedDB, sets 24h countdown in sessionStorage', async () => {
+    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(null)
+    const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => mockInitialData,
+    } as Response)
+
+    const startTime = Date.now()
+    render(<App />)
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
+    })
+
+    await waitFor(() => {
+      expect(saveMaimaiDataSpy).toHaveBeenCalledWith(mockInitialData)
+    })
+
+    const countdownStr = sessionStorage.getItem(COUNTDOWN_KEY)
+    expect(countdownStr).not.toBeNull()
+    const countdownTime = Number(countdownStr)
+    expect(countdownTime).toBeGreaterThanOrEqual(startTime + TWENTY_FOUR_HOURS_MS - 1000)
+
+    // Verify MUI Dropdown rendered categories
+    expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
+  })
+
+  it('Requirement 2: Bypasses endpoint fetch when IndexedDB has data and countdown has not been reached', async () => {
+    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => mockInitialData,
+    } as Response)
+
+    // Set valid countdown in sessionStorage (1 hour in future)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(getMaimaiDataSpy).toHaveBeenCalled()
+    })
+
+    // fetch should NOT be called
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(saveMaimaiDataSpy).not.toHaveBeenCalled()
+  })
+
+  it('Requirement 3a: Calls endpoint when countdown is reached; if updateTime is SAME, IndexedDB is not updated', async () => {
+    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => mockInitialData, // Same updateTime
+    } as Response)
+
+    // Set expired countdown in sessionStorage (1 hour in past)
+    const pastCountdown = Date.now() - 60 * 60 * 1000
+    sessionStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
+    })
+
+    // Since updateTime is same, saveMaimaiData should not be called
+    expect(saveMaimaiDataSpy).not.toHaveBeenCalled()
+
+    // Countdown should be updated to 24h in future
+    const newCountdown = Number(sessionStorage.getItem(COUNTDOWN_KEY))
+    expect(newCountdown).toBeGreaterThan(Date.now())
+  })
+
+  it('Requirement 3b: Calls endpoint when countdown is reached; if updateTime is DIFFERENT, replaces old data in IndexedDB', async () => {
+    const newFetchedData = {
+      updateTime: '2026-08-22T05:00:00.000Z',
+      categories: ['POPS & ANIME', 'VARIETY', 'ORIGINAL'],
+    }
+
+    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => newFetchedData,
+    } as Response)
+
+    const pastCountdown = Date.now() - 1000
+    sessionStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
+    })
+
+    await waitFor(() => {
+      expect(saveMaimaiDataSpy).toHaveBeenCalledWith(newFetchedData)
+    })
+  })
+
+  it('Requirement 4 & 6: Falls back to IndexedDB data if endpoint fetch fails, and dropdown still works', async () => {
+    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+
+    // Alter endpoint to fail
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network Error / Failed to fetch'))
+
+    // Expired or missing countdown to trigger endpoint call
+    sessionStorage.removeItem(COUNTDOWN_KEY)
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
+    })
+
+    // Expect dropdown to still work with IndexedDB data
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
+    })
   })
 })
