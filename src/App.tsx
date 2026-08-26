@@ -33,6 +33,9 @@ export function getInitialDarkMode(): boolean {
 export interface MaimaiData {
   updateTime?: string
   categories?: Array<string | { category?: string; name?: string; title?: string }>
+  difficulties?: Array<string | { difficulty?: string; name?: string; title?: string }>
+  types?: Array<string | { type?: string; name?: string; title?: string }>
+  versions?: Array<string | { version?: string; name?: string; title?: string }>
   [key: string]: any
 }
 
@@ -40,6 +43,9 @@ function App() {
   const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode)
   const [maimaiData, setMaimaiData] = useState<MaimaiData | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('')
+  const [selectedType, setSelectedType] = useState<string>('')
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
 
   useEffect(() => {
     sessionStorage.setItem('darkMode', darkMode ? 'true' : 'false')
@@ -126,14 +132,21 @@ function App() {
     setDarkMode((prev) => !prev)
   }
 
-  const rawCategories = Array.isArray(maimaiData?.categories) ? maimaiData!.categories : []
-  const categories: string[] = rawCategories.map((item) => {
-    if (typeof item === 'string') return item
-    if (typeof item === 'object' && item !== null) {
-      return item.category || item.name || item.title || String(item)
-    }
-    return String(item)
-  })
+  const extractItems = (raw: any[] | undefined, primaryKey: string): string[] => {
+    if (!Array.isArray(raw)) return []
+    return raw.map((item) => {
+      if (typeof item === 'string') return item
+      if (typeof item === 'object' && item !== null) {
+        return item[primaryKey] || item.name || item.title || String(item)
+      }
+      return String(item)
+    })
+  }
+
+  const categories = extractItems(maimaiData?.categories, 'category')
+  const difficulties = extractItems(maimaiData?.difficulties, 'difficulty')
+  const types = extractItems(maimaiData?.types, 'type')
+  const versions = extractItems(maimaiData?.versions, 'version')
 
   return (
     <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
@@ -163,24 +176,89 @@ function App() {
           Header Right
         </div>
       </header>
-      <main className="pt-[4rem] p-6">
-        <FormControl fullWidth style={{ maxWidth: 400 }} data-testid="category-form-control">
-          <InputLabel id="category-select-label">Category</InputLabel>
-          <Select
-            labelId="category-select-label"
-            id="category-select"
-            data-testid="category-select"
-            value={selectedCategory}
-            label="Category"
-            onChange={(e) => setSelectedCategory(e.target.value as string)}
-          >
-            {categories.map((cat, idx) => (
-              <MenuItem key={`${cat}-${idx}`} value={cat} data-testid={`category-option-${idx}`}>
-                {cat}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+      <main className="pt-20 p-6 space-y-6">
+        <div
+          className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto"
+          data-testid="dropdowns-container"
+        >
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="category-form-control">
+            <InputLabel id="category-select-label">Category</InputLabel>
+            <Select
+              labelId="category-select-label"
+              id="category-select"
+              data-testid="category-select"
+              value={selectedCategory}
+              label="Category"
+              onChange={(e) => setSelectedCategory(e.target.value as string)}
+            >
+              {categories.map((cat, idx) => (
+                <MenuItem key={`${cat}-${idx}`} value={cat} data-testid={`category-option-${idx}`}>
+                  {cat}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="difficulty-form-control">
+            <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
+            <Select
+              labelId="difficulty-select-label"
+              id="difficulty-select"
+              data-testid="difficulty-select"
+              value={selectedDifficulty}
+              label="Difficulty"
+              onChange={(e) => setSelectedDifficulty(e.target.value as string)}
+            >
+              {difficulties.map((diff, idx) => (
+                <MenuItem key={`${diff}-${idx}`} value={diff} data-testid={`difficulty-option-${idx}`}>
+                  {diff}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="type-form-control">
+            <InputLabel id="type-select-label">Type</InputLabel>
+            <Select
+              labelId="type-select-label"
+              id="type-select"
+              data-testid="type-select"
+              value={selectedType}
+              label="Type"
+              onChange={(e) => setSelectedType(e.target.value as string)}
+            >
+              {types.map((t, idx) => (
+                <MenuItem key={`${t}-${idx}`} value={t} data-testid={`type-option-${idx}`}>
+                  {t}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="version-form-control">
+            <InputLabel id="version-select-label">Version</InputLabel>
+            <Select
+              labelId="version-select-label"
+              id="version-select"
+              data-testid="version-select"
+              value={selectedVersion}
+              label="Version"
+              onChange={(e) => setSelectedVersion(e.target.value as string)}
+            >
+              {versions.map((ver, idx) => (
+                <MenuItem key={`${ver}-${idx}`} value={ver} data-testid={`version-option-${idx}`}>
+                  {ver}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </div>
+
+        <div
+          className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+          data-testid="display-container"
+        >
+        </div>
       </main>
     </div>
   )

@@ -141,7 +141,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 
   it('Requirement 1: Calls endpoint on first page load, saves to IndexedDB, sets 24h countdown in sessionStorage', async () => {
-    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(null)
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(null)
     const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -192,7 +192,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 
   it('Requirement 3a: Calls endpoint when countdown is reached; if updateTime is SAME, IndexedDB is not updated', async () => {
-    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
     const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -223,7 +223,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       categories: ['POPS & ANIME', 'VARIETY', 'ORIGINAL'],
     }
 
-    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
     const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
@@ -245,7 +245,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 
   it('Requirement 4 & 6: Falls back to IndexedDB data if endpoint fetch fails, and dropdown still works', async () => {
-    const getMaimaiDataSpy = vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
 
     // Alter endpoint to fail
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network Error / Failed to fetch'))
@@ -263,5 +263,103 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
     })
+  })
+})
+
+describe('Dropdowns and Main Layout Requirements', () => {
+  const mockFullData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    categories: ['POPS & ANIME', 'VOCALOID'],
+    difficulties: ['BASIC', 'ADVANCED', 'EXPERT', 'MASTER'],
+    types: ['STD', 'DX'],
+    versions: ['maimai', 'maimai PLUS'],
+  }
+
+  beforeEach(() => {
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockFullData)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('renders all 4 dropdowns (Category, Difficulty, Type, Version) using maimaiData', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/Difficulty/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/Type/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/Version/i)).toBeInTheDocument()
+    })
+  })
+
+  it('allows each dropdown to be selected independently', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
+    })
+
+    // Select Difficulty
+    fireEvent.mouseDown(screen.getByLabelText(/Difficulty/i))
+    const diffOption = await screen.findByTestId('difficulty-option-1')
+    fireEvent.click(diffOption)
+
+    // Select Type
+    fireEvent.mouseDown(screen.getByLabelText(/Type/i))
+    const typeOption = await screen.findByTestId('type-option-0')
+    fireEvent.click(typeOption)
+
+    // Select Version
+    fireEvent.mouseDown(screen.getByLabelText(/Version/i))
+    const verOption = await screen.findByTestId('version-option-1')
+    fireEvent.click(verOption)
+
+    // Select Category
+    fireEvent.mouseDown(screen.getByLabelText(/Category/i))
+    const catOption = await screen.findByTestId('category-option-0')
+    fireEvent.click(catOption)
+
+    // Check displayed values
+    expect(screen.getByTestId('difficulty-select')).toHaveTextContent('ADVANCED')
+    expect(screen.getByTestId('type-select')).toHaveTextContent('STD')
+    expect(screen.getByTestId('version-select')).toHaveTextContent('maimai PLUS')
+    expect(screen.getByTestId('category-select')).toHaveTextContent('POPS & ANIME')
+  })
+
+  it('centers the 4 dropdowns in a div with responsive flex-wrap classes', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dropdowns-container')).toBeInTheDocument()
+    })
+
+    const container = screen.getByTestId('dropdowns-container')
+    expect(container).toHaveClass('flex')
+    expect(container).toHaveClass('flex-wrap')
+    expect(container).toHaveClass('justify-center')
+
+    const categoryFC = screen.getByTestId('category-form-control')
+    const difficultyFC = screen.getByTestId('difficulty-form-control')
+    const typeFC = screen.getByTestId('type-form-control')
+    const versionFC = screen.getByTestId('version-form-control')
+
+    expect(categoryFC).toHaveClass('sm:w-[calc(50%-0.5rem)]')
+    expect(difficultyFC).toHaveClass('sm:w-[calc(50%-0.5rem)]')
+    expect(typeFC).toHaveClass('sm:w-[calc(50%-0.5rem)]')
+    expect(versionFC).toHaveClass('sm:w-[calc(50%-0.5rem)]')
+  })
+
+  it('renders a large display div below the dropdowns taking min 60% innerWindow height with p-4 padding', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const displayDiv = screen.getByTestId('display-container')
+    expect(displayDiv).toHaveClass('min-h-[60vh]')
+    expect(displayDiv).toHaveClass('p-4')
   })
 })
