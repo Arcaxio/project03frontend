@@ -20,7 +20,6 @@ describe('App & Header Dark Mode', () => {
       dispatchEvent: vi.fn(),
     }))
 
-    // Prevent unhandled async state updates
     vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue({ updateTime: '1', categories: [] })
     const futureCountdown = Date.now() + 60 * 60 * 1000
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
@@ -166,7 +165,6 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     const countdownTime = Number(countdownStr)
     expect(countdownTime).toBeGreaterThanOrEqual(startTime + TWENTY_FOUR_HOURS_MS - 1000)
 
-    // Verify MUI Dropdown rendered categories
     expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
   })
 
@@ -178,7 +176,6 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       json: async () => mockInitialData,
     } as Response)
 
-    // Set valid countdown in localStorage (1 hour in future)
     const futureCountdown = Date.now() + 60 * 60 * 1000
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
 
@@ -188,7 +185,6 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       expect(getMaimaiDataSpy).toHaveBeenCalled()
     })
 
-    // fetch should NOT be called
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(saveMaimaiDataSpy).not.toHaveBeenCalled()
   })
@@ -198,10 +194,9 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      json: async () => mockInitialData, // Same updateTime
+      json: async () => mockInitialData,
     } as Response)
 
-    // Set expired countdown in localStorage (1 hour in past)
     const pastCountdown = Date.now() - 60 * 60 * 1000
     localStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
 
@@ -211,10 +206,8 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
     })
 
-    // Since updateTime is same, saveMaimaiData should not be called
     expect(saveMaimaiDataSpy).not.toHaveBeenCalled()
 
-    // Countdown should be updated to 24h in future
     const newCountdown = Number(localStorage.getItem(COUNTDOWN_KEY))
     expect(newCountdown).toBeGreaterThan(Date.now())
   })
@@ -249,10 +242,8 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   it('Requirement 4 & 6: Falls back to IndexedDB data if endpoint fetch fails, and dropdown still works', async () => {
     vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockInitialData)
 
-    // Alter endpoint to fail
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network Error / Failed to fetch'))
 
-    // Expired or missing countdown to trigger endpoint call
     localStorage.removeItem(COUNTDOWN_KEY)
 
     render(<App />)
@@ -261,7 +252,6 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       expect(fetchSpy).toHaveBeenCalledWith(ENDPOINT_URL)
     })
 
-    // Expect dropdown to still work with IndexedDB data
     await waitFor(() => {
       expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
     })
@@ -286,7 +276,7 @@ describe('Dropdowns and Main Layout Requirements', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('renders all 4 dropdowns (Category, Difficulty, Type, Version) using maimaiData', async () => {
+  it('renders all 4 Autocomplete dropdowns (Category, Difficulty, Type, Version) using maimaiData', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -297,41 +287,31 @@ describe('Dropdowns and Main Layout Requirements', () => {
     })
   })
 
-  it('allows each dropdown to be selected independently', async () => {
+  it('allows each Autocomplete dropdown to be selected and unselected independently', async () => {
     render(<App />)
 
     await waitFor(() => {
       expect(screen.getByLabelText(/Category/i)).toBeInTheDocument()
     })
 
-    // Select Difficulty
-    fireEvent.mouseDown(screen.getByLabelText(/Difficulty/i))
-    const diffOption = await screen.findByTestId('difficulty-option-1')
-    fireEvent.click(diffOption)
-
-    // Select Type
-    fireEvent.mouseDown(screen.getByLabelText(/Type/i))
-    const typeOption = await screen.findByTestId('type-option-0')
-    fireEvent.click(typeOption)
-
-    // Select Version
-    fireEvent.mouseDown(screen.getByLabelText(/Version/i))
-    const verOption = await screen.findByTestId('version-option-1')
-    fireEvent.click(verOption)
-
-    // Select Category
-    fireEvent.mouseDown(screen.getByLabelText(/Category/i))
-    const catOption = await screen.findByTestId('category-option-0')
+    const categoryInput = screen.getByLabelText(/Category/i)
+    fireEvent.focus(categoryInput)
+    fireEvent.keyDown(categoryInput, { key: 'ArrowDown' })
+    const catOption = await screen.findByText('POPS & ANIME')
     fireEvent.click(catOption)
 
-    // Check displayed values
-    expect(screen.getByTestId('difficulty-select')).toHaveTextContent('ADVANCED')
-    expect(screen.getByTestId('type-select')).toHaveTextContent('STD')
-    expect(screen.getByTestId('version-select')).toHaveTextContent('maimai PLUS')
-    expect(screen.getByTestId('category-select')).toHaveTextContent('POPS & ANIME')
+    expect(categoryInput).toHaveValue('POPS & ANIME')
+
+    // Unselect/Clear Category
+    const categoryContainer = screen.getByTestId('category-form-control')
+    const clearCatBtn = categoryContainer.querySelector('.MuiAutocomplete-clearIndicator')
+    if (clearCatBtn) {
+      fireEvent.click(clearCatBtn)
+      expect(categoryInput).toHaveValue('')
+    }
   })
 
-  it('centers the 4 dropdowns in a div with responsive flex-wrap classes', async () => {
+  it('centers the filters in a div with responsive flex-wrap classes', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -389,7 +369,7 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: Renders Title and Level MUI inputs with working state', async () => {
+  it('Requirement 1: Renders Title and Level MUI TextField inputs with type="search" and working state', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -399,6 +379,9 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
 
     const titleInput = screen.getByTestId('title-input').querySelector('input')!
     const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    expect(titleInput).toHaveAttribute('type', 'search')
+    expect(levelInput).toHaveAttribute('type', 'search')
 
     fireEvent.change(titleInput, { target: { value: 'me' } })
     expect(titleInput).toHaveValue('me')
@@ -440,7 +423,6 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     expect(resultsContainer).toHaveClass('bg-gray-50')
     expect(resultsContainer).toHaveClass('dark:bg-gray-800/50')
 
-    // Filter by title "me" -> should match "mearly", "ame", "melt"
     const titleInput = screen.getByTestId('title-input').querySelector('input')!
     fireEvent.change(titleInput, { target: { value: 'me' } })
 
@@ -451,7 +433,7 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     expect(screen.queryByText('world')).not.toBeInTheDocument()
   })
 
-  it('Requirement: Filters RESULTS based on selected Category', async () => {
+  it('Requirement: Filters RESULTS based on selected Category via Autocomplete', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -461,9 +443,10 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
       expect(screen.getByTestId('category-select')).toBeInTheDocument()
     })
 
-    // Select VOCALOID
-    fireEvent.mouseDown(screen.getByLabelText(/Category/i))
-    const vocaloidOption = await screen.findByTestId('category-option-1')
+    const categoryInput = screen.getByLabelText(/Category/i)
+    fireEvent.focus(categoryInput)
+    fireEvent.keyDown(categoryInput, { key: 'ArrowDown' })
+    const vocaloidOption = await screen.findByText('VOCALOID')
     fireEvent.click(vocaloidOption)
 
     expect(screen.getByText('hello')).toBeInTheDocument()
