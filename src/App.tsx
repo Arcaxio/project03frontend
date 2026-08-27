@@ -158,9 +158,18 @@ function App() {
 
   const songs = maimaiData?.songs || []
   const filteredSongs = songs.filter((song) => {
-    if (!title) return true
-    const songTitle = song?.title || ''
-    return songTitle.toLowerCase().includes(title.toLowerCase())
+    if (title) {
+      const songTitle = song?.title || ''
+      if (!songTitle.toLowerCase().includes(title.toLowerCase())) {
+        return false
+      }
+    }
+    if (selectedCategory) {
+      if (song?.category !== selectedCategory) {
+        return false
+      }
+    }
+    return true
   })
 
   const rowVirtualizer = useVirtualizer({
@@ -321,12 +330,23 @@ function App() {
                     key={virtualRow.key}
                     data-index={virtualRow.index}
                     ref={rowVirtualizer.measureElement}
-                    className="h-[4rem] flex items-center px-4 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                    className="h-[4rem] flex items-center px-4 gap-3 bg-white dark:bg-gray-700/50 rounded shadow-sm"
                     style={{
                       height: '4rem',
                     }}
                   >
-                    {song?.title}
+                    <div className="w-10 h-10 shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
+                      {song?.imageName && (
+                        <img
+                          src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
+                          alt={song?.title || ''}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                          data-testid="song-image"
+                        />
+                      )}
+                    </div>
+                    <span className="truncate">{song?.title}</span>
                   </div>
                 )
               })}
