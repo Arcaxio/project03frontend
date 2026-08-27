@@ -370,13 +370,13 @@ describe('Dropdowns and Main Layout Requirements', () => {
 describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtualized list', () => {
   const mockDataWithSongs = {
     updateTime: '2026-08-21T01:13:03.602Z',
-    categories: ['POPS & ANIME'],
+    categories: ['POPS & ANIME', 'VOCALOID'],
     songs: [
-      { title: 'mearly' },
-      { title: 'ame' },
-      { title: 'hello' },
-      { title: 'world' },
-      { title: 'melt' },
+      { title: 'mearly', category: 'POPS & ANIME', imageName: 'cover1.png' },
+      { title: 'ame', category: 'POPS & ANIME', imageName: 'cover2.png' },
+      { title: 'hello', category: 'VOCALOID', imageName: 'cover3.png' },
+      { title: 'world', category: 'VOCALOID', imageName: 'cover4.png' },
+      { title: 'melt', category: 'POPS & ANIME', imageName: 'cover5.png' },
     ],
   }
 
@@ -449,5 +449,43 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     expect(screen.getByText('melt')).toBeInTheDocument()
     expect(screen.queryByText('hello')).not.toBeInTheDocument()
     expect(screen.queryByText('world')).not.toBeInTheDocument()
+  })
+
+  it('Requirement: Filters RESULTS based on selected Category', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('category-select')).toBeInTheDocument()
+    })
+
+    // Select VOCALOID
+    fireEvent.mouseDown(screen.getByLabelText(/Category/i))
+    const vocaloidOption = await screen.findByTestId('category-option-1')
+    fireEvent.click(vocaloidOption)
+
+    expect(screen.getByText('hello')).toBeInTheDocument()
+    expect(screen.getByText('world')).toBeInTheDocument()
+    expect(screen.queryByText('mearly')).not.toBeInTheDocument()
+    expect(screen.queryByText('ame')).not.toBeInTheDocument()
+    expect(screen.queryByText('melt')).not.toBeInTheDocument()
+  })
+
+  it('Requirement: Renders cover image on the left of song title with CloudFront URL and loading lazy', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const images = screen.getAllByTestId('song-image')
+    expect(images.length).toBeGreaterThan(0)
+    expect(images[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover1.png')
+    expect(images[0]).toHaveAttribute('loading', 'lazy')
   })
 })
