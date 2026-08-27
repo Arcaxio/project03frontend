@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import Input from '@mui/material/Input'
+import TextField from '@mui/material/TextField'
+import Autocomplete from '@mui/material/Autocomplete'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useRef } from 'react'
 import { getMaimaiData, saveMaimaiData } from './utils/db'
 
 export const ENDPOINT_URL = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json'
@@ -55,6 +53,16 @@ function App() {
 
   const parentRef = useRef<HTMLDivElement>(null)
 
+  const muiTheme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: darkMode ? 'dark' : 'light',
+        },
+      }),
+    [darkMode],
+  )
+
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode ? 'true' : 'false')
     if (darkMode) {
@@ -80,7 +88,6 @@ function App() {
         }
       }
 
-      // Step 2: Next time user enters app, IndexedDB has data, and hasn't reached countdown time -> do not call endpoint
       if (existingData && !hasExpired) {
         if (isMounted) {
           setMaimaiData(existingData)
@@ -88,7 +95,6 @@ function App() {
         return
       }
 
-      // Step 1, 3, 4: First page load OR countdown reached OR error fallback
       try {
         const response = await fetch(ENDPOINT_URL)
         if (!response.ok) {
@@ -99,22 +105,17 @@ function App() {
         let dataToUse = newData
 
         if (existingData) {
-          // Step 3: Countdown time reached -> compare updateTime with IndexedDB
           if (existingData.updateTime && newData.updateTime && existingData.updateTime === newData.updateTime) {
-            // Same updateTime: do nothing to IndexedDB
             dataToUse = existingData
           } else {
-            // Different updateTime: replace old data with new one
             await saveMaimaiData(newData)
             dataToUse = newData
           }
         } else {
-          // Step 1: First page load -> store in IndexedDB
           await saveMaimaiData(newData)
           dataToUse = newData
         }
 
-        // Set datetime countdown in localStorage for 24 hours in the future
         const nextCountdown = Date.now() + TWENTY_FOUR_HOURS_MS
         localStorage.setItem(COUNTDOWN_KEY, nextCountdown.toString())
 
@@ -122,7 +123,6 @@ function App() {
           setMaimaiData(dataToUse)
         }
       } catch (err) {
-        // Step 4: Endpoint call fails -> use data from IndexedDB
         if (existingData && isMounted) {
           setMaimaiData(existingData)
         }
@@ -175,192 +175,165 @@ function App() {
   const rowVirtualizer = useVirtualizer({
     count: filteredSongs.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 64, // 4rem = 64px
-    gap: 4, // gap-1 = 4px
+    estimateSize: () => 64,
+    gap: 4,
     overscan: 5,
   })
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
-      <header
-        className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50 shadow-sm"
-        style={{ height: '4rem' }}
-        data-testid="header"
-      >
-        <div className="flex items-center justify-start flex-1" data-testid="header-left">
-          <IconButton
-            onClick={toggleDarkMode}
-            aria-label="toggle dark mode"
-            data-testid="dark-mode-toggle"
-            color="inherit"
-          >
-            {darkMode ? (
-              <LightModeIcon data-testid="light-icon" />
-            ) : (
-              <DarkModeIcon data-testid="dark-icon" />
-            )}
-          </IconButton>
-        </div>
-        <div className="flex items-center justify-center flex-1 text-center font-medium" data-testid="header-center">
-          Header Center
-        </div>
-        <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
-          Header Right
-        </div>
-      </header>
-      <main className="pt-20 p-6 space-y-6">
-        <div
-          className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto FILTERS"
-          data-testid="dropdowns-container"
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
+        <header
+          className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 z-50 shadow-sm"
+          style={{ height: '4rem' }}
+          data-testid="header"
         >
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="title-form-control">
-            <InputLabel htmlFor="title-input">Title</InputLabel>
-            <Input
-              id="title-input"
-              data-testid="title-input"
+          <div className="flex items-center justify-start flex-1" data-testid="header-left">
+            <IconButton
+              onClick={toggleDarkMode}
+              aria-label="toggle dark mode"
+              data-testid="dark-mode-toggle"
+              color="inherit"
+            >
+              {darkMode ? (
+                <LightModeIcon data-testid="light-icon" />
+              ) : (
+                <DarkModeIcon data-testid="dark-icon" />
+              )}
+            </IconButton>
+          </div>
+          <div className="flex items-center justify-center flex-1 text-center font-medium" data-testid="header-center">
+            Header Center
+          </div>
+          <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
+            Header Right
+          </div>
+        </header>
+        <main className="pt-20 p-6 space-y-6">
+          <div
+            className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto FILTERS"
+            data-testid="dropdowns-container"
+          >
+            <TextField
+              label="Title"
+              type="search"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="title-input"
             />
-          </FormControl>
 
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="level-form-control">
-            <InputLabel htmlFor="level-input">Level</InputLabel>
-            <Input
-              id="level-input"
-              data-testid="level-input"
+            <TextField
+              label="Level"
+              type="search"
               value={level}
               onChange={(e) => setLevel(e.target.value)}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="level-input"
             />
-          </FormControl>
 
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="category-form-control">
-            <InputLabel id="category-select-label">Category</InputLabel>
-            <Select
-              labelId="category-select-label"
-              id="category-select"
-              data-testid="category-select"
-              value={selectedCategory}
-              label="Category"
-              onChange={(e) => setSelectedCategory(e.target.value as string)}
-            >
-              {categories.map((cat, idx) => (
-                <MenuItem key={`${cat}-${idx}`} value={cat} data-testid={`category-option-${idx}`}>
-                  {cat}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            <Autocomplete
+              options={categories}
+              value={selectedCategory || null}
+              onChange={(_, newValue) => setSelectedCategory(newValue || '')}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="category-form-control"
+              renderInput={(params) => (
+                <TextField {...params} label="Category" data-testid="category-select" />
+              )}
+            />
 
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="difficulty-form-control">
-            <InputLabel id="difficulty-select-label">Difficulty</InputLabel>
-            <Select
-              labelId="difficulty-select-label"
-              id="difficulty-select"
-              data-testid="difficulty-select"
-              value={selectedDifficulty}
-              label="Difficulty"
-              onChange={(e) => setSelectedDifficulty(e.target.value as string)}
-            >
-              {difficulties.map((diff, idx) => (
-                <MenuItem key={`${diff}-${idx}`} value={diff} data-testid={`difficulty-option-${idx}`}>
-                  {diff}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            <Autocomplete
+              options={difficulties}
+              value={selectedDifficulty || null}
+              onChange={(_, newValue) => setSelectedDifficulty(newValue || '')}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="difficulty-form-control"
+              renderInput={(params) => (
+                <TextField {...params} label="Difficulty" data-testid="difficulty-select" />
+              )}
+            />
 
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="type-form-control">
-            <InputLabel id="type-select-label">Type</InputLabel>
-            <Select
-              labelId="type-select-label"
-              id="type-select"
-              data-testid="type-select"
-              value={selectedType}
-              label="Type"
-              onChange={(e) => setSelectedType(e.target.value as string)}
-            >
-              {types.map((t, idx) => (
-                <MenuItem key={`${t}-${idx}`} value={t} data-testid={`type-option-${idx}`}>
-                  {t}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            <Autocomplete
+              options={types}
+              value={selectedType || null}
+              onChange={(_, newValue) => setSelectedType(newValue || '')}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="type-form-control"
+              renderInput={(params) => (
+                <TextField {...params} label="Type" data-testid="type-select" />
+              )}
+            />
 
-          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="version-form-control">
-            <InputLabel id="version-select-label">Version</InputLabel>
-            <Select
-              labelId="version-select-label"
-              id="version-select"
-              data-testid="version-select"
-              value={selectedVersion}
-              label="Version"
-              onChange={(e) => setSelectedVersion(e.target.value as string)}
-            >
-              {versions.map((ver, idx) => (
-                <MenuItem key={`${ver}-${idx}`} value={ver} data-testid={`version-option-${idx}`}>
-                  {ver}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
+            <Autocomplete
+              options={versions}
+              value={selectedVersion || null}
+              onChange={(_, newValue) => setSelectedVersion(newValue || '')}
+              className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
+              data-testid="version-form-control"
+              renderInput={(params) => (
+                <TextField {...params} label="Version" data-testid="version-select" />
+              )}
+            />
+          </div>
 
-        <div
-          ref={parentRef}
-          className="RESULTS h-[16rem] overflow-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 w-full max-w-4xl mx-auto"
-          data-testid="results-container"
-        >
           <div
-            className="w-full relative"
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-            }}
+            ref={parentRef}
+            className="RESULTS h-[16rem] overflow-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 w-full max-w-4xl mx-auto"
+            data-testid="results-container"
           >
             <div
-              className="absolute top-0 left-0 w-full flex flex-col gap-1"
+              className="w-full relative"
               style={{
-                transform: `translateY(${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
+                height: `${rowVirtualizer.getTotalSize()}px`,
               }}
             >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const song = filteredSongs[virtualRow.index]
-                return (
-                  <div
-                    key={virtualRow.key}
-                    data-index={virtualRow.index}
-                    ref={rowVirtualizer.measureElement}
-                    className="h-[4rem] flex items-center px-4 gap-3 bg-white dark:bg-gray-700/50 rounded shadow-sm"
-                    style={{
-                      height: '4rem',
-                    }}
-                  >
-                    <div className="w-10 h-10 shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
-                      {song?.imageName && (
-                        <img
-                          src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
-                          alt={song?.title || ''}
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                          data-testid="song-image"
-                        />
-                      )}
+              <div
+                className="absolute top-0 left-0 w-full flex flex-col gap-1"
+                style={{
+                  transform: `translateY(${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const song = filteredSongs[virtualRow.index]
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      className="h-[4rem] flex items-center px-4 gap-3 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                      style={{
+                        height: '4rem',
+                      }}
+                    >
+                      <div className="w-10 h-10 shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
+                        {song?.imageName && (
+                          <img
+                            src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
+                            alt={song?.title || ''}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                            data-testid="song-image"
+                          />
+                        )}
+                      </div>
+                      <span className="truncate">{song?.title}</span>
                     </div>
-                    <span className="truncate">{song?.title}</span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID"
-          data-testid="display-container"
-        >
-        </div>
-      </main>
-    </div>
+          <div
+            className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID"
+            data-testid="display-container"
+          >
+          </div>
+        </main>
+      </div>
+    </ThemeProvider>
   )
 }
 
