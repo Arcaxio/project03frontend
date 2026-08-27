@@ -5,6 +5,7 @@ import * as dbModule from './utils/db'
 
 describe('App & Header Dark Mode', () => {
   beforeEach(() => {
+    localStorage.clear()
     sessionStorage.clear()
     document.documentElement.classList.remove('dark')
     vi.restoreAllMocks()
@@ -22,7 +23,7 @@ describe('App & Header Dark Mode', () => {
     // Prevent unhandled async state updates
     vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue({ updateTime: '1', categories: [] })
     const futureCountdown = Date.now() + 60 * 60 * 1000
-    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
   it('renders static header with height 4rem and 3 distinct sides (left, center, right)', async () => {
@@ -53,17 +54,17 @@ describe('App & Header Dark Mode', () => {
     expect(leftSide).toContainElement(toggleBtn)
   })
 
-  it('defaults to light mode when sessionStorage is empty and OS has no dark preference', async () => {
+  it('defaults to light mode when localStorage is empty and OS has no dark preference', async () => {
     render(<App />)
     await waitFor(() => {
       expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     })
     expect(screen.queryByTestId('light-icon')).not.toBeInTheDocument()
-    expect(sessionStorage.getItem('darkMode')).toBe('false')
+    expect(localStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
-  it('uses OS preference when darkMode is not detected in sessionStorage', async () => {
+  it('uses OS preference when darkMode is not detected in localStorage', async () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-color-scheme: dark)',
       media: query,
@@ -80,11 +81,11 @@ describe('App & Header Dark Mode', () => {
       expect(screen.getByTestId('light-icon')).toBeInTheDocument()
     })
     expect(screen.queryByTestId('dark-icon')).not.toBeInTheDocument()
-    expect(sessionStorage.getItem('darkMode')).toBe('true')
+    expect(localStorage.getItem('darkMode')).toBe('true')
     expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
-  it('uses sessionStorage preference over OS preference when darkMode is set in sessionStorage', async () => {
+  it('uses localStorage preference over OS preference when darkMode is set in localStorage', async () => {
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query === '(prefers-color-scheme: dark)',
       media: query,
@@ -96,35 +97,35 @@ describe('App & Header Dark Mode', () => {
       dispatchEvent: vi.fn(),
     }))
 
-    sessionStorage.setItem('darkMode', 'false')
+    localStorage.setItem('darkMode', 'false')
 
     render(<App />)
     await waitFor(() => {
       expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     })
-    expect(sessionStorage.getItem('darkMode')).toBe('false')
+    expect(localStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
-  it('toggles dark mode when clicking the toggle button and updates sessionStorage and icons', async () => {
+  it('toggles dark mode when clicking the toggle button and updates localStorage and icons', async () => {
     render(<App />)
     await waitFor(() => {
       expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     })
     const toggleBtn = screen.getByTestId('dark-mode-toggle')
 
-    expect(sessionStorage.getItem('darkMode')).toBe('false')
+    expect(localStorage.getItem('darkMode')).toBe('false')
 
     fireEvent.click(toggleBtn)
     expect(screen.getByTestId('light-icon')).toBeInTheDocument()
     expect(screen.queryByTestId('dark-icon')).not.toBeInTheDocument()
-    expect(sessionStorage.getItem('darkMode')).toBe('true')
+    expect(localStorage.getItem('darkMode')).toBe('true')
     expect(document.documentElement.classList.contains('dark')).toBe(true)
 
     fireEvent.click(toggleBtn)
     expect(screen.getByTestId('dark-icon')).toBeInTheDocument()
     expect(screen.queryByTestId('light-icon')).not.toBeInTheDocument()
-    expect(sessionStorage.getItem('darkMode')).toBe('false')
+    expect(localStorage.getItem('darkMode')).toBe('false')
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 })
@@ -136,11 +137,12 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear()
     sessionStorage.clear()
     vi.restoreAllMocks()
   })
 
-  it('Requirement 1: Calls endpoint on first page load, saves to IndexedDB, sets 24h countdown in sessionStorage', async () => {
+  it('Requirement 1: Calls endpoint on first page load, saves to IndexedDB, sets 24h countdown in localStorage', async () => {
     vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(null)
     const saveMaimaiDataSpy = vi.spyOn(dbModule, 'saveMaimaiData').mockResolvedValue(undefined)
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -159,7 +161,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       expect(saveMaimaiDataSpy).toHaveBeenCalledWith(mockInitialData)
     })
 
-    const countdownStr = sessionStorage.getItem(COUNTDOWN_KEY)
+    const countdownStr = localStorage.getItem(COUNTDOWN_KEY)
     expect(countdownStr).not.toBeNull()
     const countdownTime = Number(countdownStr)
     expect(countdownTime).toBeGreaterThanOrEqual(startTime + TWENTY_FOUR_HOURS_MS - 1000)
@@ -176,9 +178,9 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       json: async () => mockInitialData,
     } as Response)
 
-    // Set valid countdown in sessionStorage (1 hour in future)
+    // Set valid countdown in localStorage (1 hour in future)
     const futureCountdown = Date.now() + 60 * 60 * 1000
-    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
 
     render(<App />)
 
@@ -199,9 +201,9 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
       json: async () => mockInitialData, // Same updateTime
     } as Response)
 
-    // Set expired countdown in sessionStorage (1 hour in past)
+    // Set expired countdown in localStorage (1 hour in past)
     const pastCountdown = Date.now() - 60 * 60 * 1000
-    sessionStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
+    localStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
 
     render(<App />)
 
@@ -213,7 +215,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     expect(saveMaimaiDataSpy).not.toHaveBeenCalled()
 
     // Countdown should be updated to 24h in future
-    const newCountdown = Number(sessionStorage.getItem(COUNTDOWN_KEY))
+    const newCountdown = Number(localStorage.getItem(COUNTDOWN_KEY))
     expect(newCountdown).toBeGreaterThan(Date.now())
   })
 
@@ -231,7 +233,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     } as Response)
 
     const pastCountdown = Date.now() - 1000
-    sessionStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
+    localStorage.setItem(COUNTDOWN_KEY, pastCountdown.toString())
 
     render(<App />)
 
@@ -251,7 +253,7 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network Error / Failed to fetch'))
 
     // Expired or missing countdown to trigger endpoint call
-    sessionStorage.removeItem(COUNTDOWN_KEY)
+    localStorage.removeItem(COUNTDOWN_KEY)
 
     render(<App />)
 
@@ -276,11 +278,12 @@ describe('Dropdowns and Main Layout Requirements', () => {
   }
 
   beforeEach(() => {
+    localStorage.clear()
     sessionStorage.clear()
     vi.restoreAllMocks()
     vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockFullData)
     const futureCountdown = Date.now() + 60 * 60 * 1000
-    sessionStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
   it('renders all 4 dropdowns (Category, Difficulty, Type, Version) using maimaiData', async () => {
@@ -361,5 +364,90 @@ describe('Dropdowns and Main Layout Requirements', () => {
     const displayDiv = screen.getByTestId('display-container')
     expect(displayDiv).toHaveClass('min-h-[60vh]')
     expect(displayDiv).toHaveClass('p-4')
+  })
+})
+
+describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtualized list', () => {
+  const mockDataWithSongs = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    categories: ['POPS & ANIME'],
+    songs: [
+      { title: 'mearly' },
+      { title: 'ame' },
+      { title: 'hello' },
+      { title: 'world' },
+      { title: 'melt' },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockDataWithSongs)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('Requirement 1: Renders Title and Level MUI inputs with working state', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('title-input')).toBeInTheDocument()
+      expect(screen.getByTestId('level-input')).toBeInTheDocument()
+    })
+
+    const titleInput = screen.getByTestId('title-input').querySelector('input')!
+    const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    fireEvent.change(titleInput, { target: { value: 'me' } })
+    expect(titleInput).toHaveValue('me')
+
+    fireEvent.change(levelInput, { target: { value: '12+' } })
+    expect(levelInput).toHaveValue('12+')
+  })
+
+  it('Requirement 3: Check classnames FILTERS on dropdowns-container and GRID on display-container', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dropdowns-container')).toBeInTheDocument()
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const dropdownsContainer = screen.getByTestId('dropdowns-container')
+    const displayContainer = screen.getByTestId('display-container')
+
+    expect(dropdownsContainer).toHaveClass('FILTERS')
+    expect(displayContainer).toHaveClass('GRID')
+  })
+
+  it('Requirement 4, 5, 6 & 7: Renders RESULTS div between FILTERS and GRID with 16rem height, scrollable, bg-gray-50 dark:bg-gray-800/50, and filters songs by title', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const resultsContainer = screen.getByTestId('results-container')
+
+    expect(resultsContainer).toHaveClass('RESULTS')
+    expect(resultsContainer).toHaveClass('h-[16rem]')
+    expect(resultsContainer).toHaveClass('overflow-auto')
+    expect(resultsContainer).toHaveClass('bg-gray-50')
+    expect(resultsContainer).toHaveClass('dark:bg-gray-800/50')
+
+    // Filter by title "me" -> should match "mearly", "ame", "melt"
+    const titleInput = screen.getByTestId('title-input').querySelector('input')!
+    fireEvent.change(titleInput, { target: { value: 'me' } })
+
+    expect(screen.getByText('mearly')).toBeInTheDocument()
+    expect(screen.getByText('ame')).toBeInTheDocument()
+    expect(screen.getByText('melt')).toBeInTheDocument()
+    expect(screen.queryByText('hello')).not.toBeInTheDocument()
+    expect(screen.queryByText('world')).not.toBeInTheDocument()
   })
 })

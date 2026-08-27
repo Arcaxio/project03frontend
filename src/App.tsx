@@ -6,6 +6,9 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
+import Input from '@mui/material/Input'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useRef } from 'react'
 import { getMaimaiData, saveMaimaiData } from './utils/db'
 
 export const ENDPOINT_URL = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json'
@@ -13,7 +16,7 @@ export const COUNTDOWN_KEY = 'maimaiCountdown'
 export const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 
 export function getInitialDarkMode(): boolean {
-  const saved = sessionStorage.getItem('darkMode')
+  const saved = localStorage.getItem('darkMode')
   if (saved !== null) {
     return saved === 'true'
   }
@@ -36,6 +39,7 @@ export interface MaimaiData {
   difficulties?: Array<string | { difficulty?: string; name?: string; title?: string }>
   types?: Array<string | { type?: string; name?: string; title?: string }>
   versions?: Array<string | { version?: string; name?: string; title?: string }>
+  songs?: Array<{ title?: string; [key: string]: any }>
   [key: string]: any
 }
 
@@ -46,9 +50,13 @@ function App() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedVersion, setSelectedVersion] = useState<string>('')
+  const [title, setTitle] = useState<string>('')
+  const [level, setLevel] = useState<string>('')
+
+  const parentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    sessionStorage.setItem('darkMode', darkMode ? 'true' : 'false')
+    localStorage.setItem('darkMode', darkMode ? 'true' : 'false')
     if (darkMode) {
       document.documentElement.classList.add('dark')
     } else {
@@ -61,7 +69,7 @@ function App() {
 
     async function initializeMaimaiData() {
       const existingData = await getMaimaiData()
-      const countdownStr = sessionStorage.getItem(COUNTDOWN_KEY)
+      const countdownStr = localStorage.getItem(COUNTDOWN_KEY)
       const now = Date.now()
 
       let hasExpired = true
@@ -106,9 +114,9 @@ function App() {
           dataToUse = newData
         }
 
-        // Set datetime countdown in sessionStorage for 24 hours in the future
+        // Set datetime countdown in localStorage for 24 hours in the future
         const nextCountdown = Date.now() + TWENTY_FOUR_HOURS_MS
-        sessionStorage.setItem(COUNTDOWN_KEY, nextCountdown.toString())
+        localStorage.setItem(COUNTDOWN_KEY, nextCountdown.toString())
 
         if (isMounted) {
           setMaimaiData(dataToUse)
@@ -148,6 +156,21 @@ function App() {
   const types = extractItems(maimaiData?.types, 'type')
   const versions = extractItems(maimaiData?.versions, 'version')
 
+  const songs = maimaiData?.songs || []
+  const filteredSongs = songs.filter((song) => {
+    if (!title) return true
+    const songTitle = song?.title || ''
+    return songTitle.toLowerCase().includes(title.toLowerCase())
+  })
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredSongs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 64, // 4rem = 64px
+    gap: 4, // gap-1 = 4px
+    overscan: 5,
+  })
+
   return (
     <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
       <header
@@ -178,9 +201,29 @@ function App() {
       </header>
       <main className="pt-20 p-6 space-y-6">
         <div
-          className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto"
+          className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto FILTERS"
           data-testid="dropdowns-container"
         >
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="title-form-control">
+            <InputLabel htmlFor="title-input">Title</InputLabel>
+            <Input
+              id="title-input"
+              data-testid="title-input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </FormControl>
+
+          <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="level-form-control">
+            <InputLabel htmlFor="level-input">Level</InputLabel>
+            <Input
+              id="level-input"
+              data-testid="level-input"
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+            />
+          </FormControl>
+
           <FormControl className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]" data-testid="category-form-control">
             <InputLabel id="category-select-label">Category</InputLabel>
             <Select
@@ -255,7 +298,44 @@ function App() {
         </div>
 
         <div
-          className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+          ref={parentRef}
+          className="RESULTS h-[16rem] overflow-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 w-full max-w-4xl mx-auto"
+          data-testid="results-container"
+        >
+          <div
+            className="w-full relative"
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+            }}
+          >
+            <div
+              className="absolute top-0 left-0 w-full flex flex-col gap-1"
+              style={{
+                transform: `translateY(${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const song = filteredSongs[virtualRow.index]
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    className="h-[4rem] flex items-center px-4 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                    style={{
+                      height: '4rem',
+                    }}
+                  >
+                    {song?.title}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID"
           data-testid="display-container"
         >
         </div>
