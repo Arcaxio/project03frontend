@@ -169,6 +169,43 @@ function App() {
         return false
       }
     }
+    if (selectedDifficulty) {
+      const hasDifficulty = song?.sheets?.some(
+        (sheet: any) => sheet?.difficulty?.toLowerCase() === selectedDifficulty.toLowerCase()
+      )
+      if (!hasDifficulty) {
+        return false
+      }
+    }
+    if (selectedType) {
+      const hasType = song?.sheets?.some(
+        (sheet: any) => sheet?.type?.toLowerCase() === selectedType.toLowerCase()
+      )
+      if (!hasType) {
+        return false
+      }
+    }
+    if (selectedVersion) {
+      if (song?.version?.toLowerCase() !== selectedVersion.toLowerCase()) {
+        return false
+      }
+    }
+    if (level && level.trim()) {
+      const targetLevel = level.trim()
+      const isPlusTarget = targetLevel.endsWith('+')
+      const hasMatchingLevel = song?.sheets?.some((sheet: any) => {
+        const sheetLevel = sheet?.level?.toString().trim()
+        if (!sheetLevel) return false
+        if (isPlusTarget) {
+          return sheetLevel === targetLevel
+        } else {
+          return sheetLevel === targetLevel || sheetLevel === `${targetLevel}+`
+        }
+      })
+      if (!hasMatchingLevel) {
+        return false
+      }
+    }
     return true
   })
 
