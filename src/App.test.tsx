@@ -666,3 +666,116 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
   })
 })
+
+describe('Filtering by Version, Type, and Level', () => {
+  const mockFilterData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    categories: ['POPS & ANIME'],
+    difficulties: ['BASIC', 'EXPERT', 'MASTER'],
+    types: ['std', 'dx'],
+    versions: ['GreeN', 'ORANGE', 'PRiSM'],
+    songs: [
+      {
+        title: 'GreeN Song STD & DX',
+        version: 'GreeN',
+        sheets: [
+          { type: 'std', difficulty: 'basic', level: '12' },
+          { type: 'dx', difficulty: 'master', level: '12+' },
+        ],
+      },
+      {
+        title: 'ORANGE Song STD Only',
+        version: 'ORANGE',
+        sheets: [{ type: 'std', difficulty: 'expert', level: '12' }],
+      },
+      {
+        title: 'PRiSM Song DX Only',
+        version: 'PRiSM',
+        sheets: [{ type: 'dx', difficulty: 'master', level: '13' }],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockFilterData)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('filters songs by version when selected in Version autocomplete', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Version/i)).toBeInTheDocument()
+    })
+
+    const versionInput = screen.getByLabelText(/Version/i)
+    fireEvent.focus(versionInput)
+    fireEvent.keyDown(versionInput, { key: 'ArrowDown' })
+    const option = await screen.findByText('GreeN')
+    fireEvent.click(option)
+
+    expect(screen.getByText('GreeN Song STD & DX')).toBeInTheDocument()
+    expect(screen.queryByText('ORANGE Song STD Only')).not.toBeInTheDocument()
+    expect(screen.queryByText('PRiSM Song DX Only')).not.toBeInTheDocument()
+  })
+
+  it('filters songs by type when selected in Type autocomplete, including charts with both dx and std', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Type/i)).toBeInTheDocument()
+    })
+
+    const typeInput = screen.getByLabelText(/Type/i)
+    fireEvent.focus(typeInput)
+    fireEvent.keyDown(typeInput, { key: 'ArrowDown' })
+    const dxOption = await screen.findByText('dx')
+    fireEvent.click(dxOption)
+
+    // "GreeN Song STD & DX" has dx sheet, so it should be included alongside "PRiSM Song DX Only"
+    expect(screen.getByText('GreeN Song STD & DX')).toBeInTheDocument()
+    expect(screen.getByText('PRiSM Song DX Only')).toBeInTheDocument()
+    expect(screen.queryByText('ORANGE Song STD Only')).not.toBeInTheDocument()
+  })
+
+  it('filters songs by level when typing "12" vs typing "12+" into level input', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('level-input')).toBeInTheDocument()
+    })
+
+    const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    // Typing "12" considers "12" or "12+"
+    fireEvent.change(levelInput, { target: { value: '12' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('GreeN Song STD & DX')).toBeInTheDocument() // has 12 and 12+
+      expect(screen.getByText('ORANGE Song STD Only')).toBeInTheDocument() // has 12
+      expect(screen.queryByText('PRiSM Song DX Only')).not.toBeInTheDocument() // has 13
+    })
+
+    // Typing "12+" considers ONLY "12+"
+    fireEvent.change(levelInput, { target: { value: '12+' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('GreeN Song STD & DX')).toBeInTheDocument() // has 12+
+      expect(screen.queryByText('ORANGE Song STD Only')).not.toBeInTheDocument() // only has 12
+      expect(screen.queryByText('PRiSM Song DX Only')).not.toBeInTheDocument() // has 13
+    })
+  })
+})
