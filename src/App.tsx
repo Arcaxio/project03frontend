@@ -175,7 +175,7 @@ function App() {
   const rowVirtualizer = useVirtualizer({
     count: filteredSongs.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 64,
+    estimateSize: () => 88,
     gap: 4,
     overscan: 5,
   })
@@ -280,7 +280,7 @@ function App() {
 
           <div
             ref={parentRef}
-            className="RESULTS h-[16rem] overflow-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 w-full max-w-4xl mx-auto"
+            className="RESULTS h-[16rem] overflow-auto bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-lg p-4 w-full max-w-4xl mx-auto"
             data-testid="results-container"
           >
             <div
@@ -298,13 +298,13 @@ function App() {
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const song = filteredSongs[virtualRow.index]
 
-                  const sheetType = song?.sheets?.[0]?.type || song?.sheets?.find((s: any) => s?.type)?.type
-                  let typeImageUrl: string | null = null
-                  if (sheetType && sheetType.toLowerCase() === 'std') {
-                    typeImageUrl = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png'
-                  } else if (sheetType && sheetType.toLowerCase() === 'dx') {
-                    typeImageUrl = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png'
-                  }
+                  const sheetTypes = Array.from(
+                    new Set(
+                      song?.sheets
+                        ?.map((s: any) => s?.type?.toLowerCase())
+                        .filter((t: string) => t === 'std' || t === 'dx')
+                    )
+                  ) as string[]
 
                   const getDifficultyColor = (diffKey?: string) => {
                     if (!diffKey || !maimaiData?.difficulties) return undefined
@@ -328,44 +328,62 @@ function App() {
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className="h-[4rem] flex items-center justify-between px-2 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                      className="h-[5.5rem] flex items-center justify-between px-2 bg-white dark:bg-gray-700/50 rounded shadow-sm"
                       style={{
-                        height: '4rem',
+                        height: '5.5rem',
                       }}
                     >
                       <div className="relative flex items-center gap-3 min-w-0">
-                        {typeImageUrl && (
+                        {sheetTypes.length > 1 ? (
+                          <div className="absolute top-0 left-0 flex items-center gap-0.5 z-10" data-testid="type-badges-box">
+                            {sheetTypes.map((t) => (
+                              <img
+                                key={t}
+                                src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${t}.png`}
+                                alt={t}
+                                className="h-[1rem]"
+                                data-testid="sheet-type-badge"
+                              />
+                            ))}
+                          </div>
+                        ) : sheetTypes.length === 1 ? (
                           <img
-                            src={typeImageUrl}
-                            alt={sheetType || ''}
-                            className="absolute top-0 left-0 h-[1.5rem]"
+                            src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${sheetTypes[0]}.png`}
+                            alt={sheetTypes[0]}
+                            className="absolute top-0 left-0 h-[1rem]"
                             data-testid="sheet-type-badge"
                           />
-                        )}
-                        <div className="w-[3rem] h-[3rem] shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
+                        ) : null}
+                        <div className="w-[4.5rem] h-[4.5rem] shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
                           {song?.imageName && (
                             <img
                               src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
                               alt={song?.title || ''}
                               loading="lazy"
-                              className="w-[3rem] h-[3rem] object-cover"
+                              className="w-[4.5rem] h-[4.5rem] object-cover"
                               data-testid="song-image"
                             />
                           )}
                         </div>
                         <span className="truncate">{song?.title}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0" data-testid="song-sheets-container">
+                      <div className="flex items-center gap-2 shrink-0" data-testid="song-sheets-container">
                         {song?.sheets?.map((sheet: any, idx: number) => {
                           const color = getDifficultyColor(sheet?.difficulty)
                           return (
                             <button
+                              type="button"
                               key={idx}
-                              className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex items-center justify-center text-xs"
+                              className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex flex-col items-center justify-center text-sm leading-tight"
                               style={{ backgroundColor: color }}
                               data-testid="sheet-button"
                             >
-                              {sheet?.level}
+                              <span>{sheet?.level}</span>
+                              {sheet?.type && (
+                                <span className="text-[10px] font-normal leading-none">
+                                  ({sheet.type.toLowerCase()})
+                                </span>
+                              )}
                             </button>
                           )
                         })}
