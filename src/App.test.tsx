@@ -512,7 +512,7 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: Cover image is 3rem in width and height, container padding is px-2', async () => {
+  it('Requirement 1: Cover image is 4.5rem in width and height, container padding is px-2', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -523,14 +523,14 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     })
 
     const images = screen.getAllByTestId('song-image')
-    expect(images[0]).toHaveClass('w-[3rem]')
-    expect(images[0]).toHaveClass('h-[3rem]')
+    expect(images[0]).toHaveClass('w-[4.5rem]')
+    expect(images[0]).toHaveClass('h-[4.5rem]')
 
-    const rows = screen.getAllByTestId('song-image').map((img) => img.closest('.h-\\[4rem\\]'))
+    const rows = screen.getAllByTestId('song-image').map((img) => img.closest('.h-\\[5\\.5rem\\]'))
     expect(rows[0]).toHaveClass('px-2')
   })
 
-  it('Requirement 2: Container is justify-between, img and span in first div, maps sheets to 2.5rem buttons with difficulty color and level text', async () => {
+  it('Requirement 2: Container is justify-between, img and span in first div, maps sheets to 2.5rem buttons with type="button", text-sm, difficulty color and level text', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -540,7 +540,7 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
       expect(screen.getByTestId('results-container')).toBeInTheDocument()
     })
 
-    const row = screen.getByText('STD Song').closest('.h-\\[4rem\\]')!
+    const row = screen.getByText('STD Song').closest('.h-\\[5\\.5rem\\]')!
     expect(row).toHaveClass('justify-between')
 
     const firstDiv = screen.getByText('STD Song').parentElement!
@@ -549,12 +549,16 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(firstDiv).toContainElement(screen.getByText('STD Song'))
 
     const sheetContainers = screen.getAllByTestId('song-sheets-container')
+    expect(sheetContainers[0]).toHaveClass('gap-2')
     const stdButtons = sheetContainers[0].querySelectorAll('button')
     expect(stdButtons.length).toBe(3)
 
+    expect(stdButtons[0]).toHaveAttribute('type', 'button')
     expect(stdButtons[0]).toHaveClass('w-[2.5rem]')
     expect(stdButtons[0]).toHaveClass('h-[2.5rem]')
+    expect(stdButtons[0]).toHaveClass('text-sm')
     expect(stdButtons[0]).toHaveTextContent('3')
+    expect(stdButtons[0]).toHaveTextContent('(std)')
     expect(stdButtons[0]).toHaveStyle({ backgroundColor: 'rgb(34, 187, 91)' }) // #22bb5b
 
     expect(stdButtons[1]).toHaveTextContent('7')
@@ -564,7 +568,7 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(stdButtons[2]).toHaveStyle({ backgroundColor: 'rgb(158, 69, 226)' }) // #9e45e2
   })
 
-  it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png', async () => {
+  it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png and height 1rem', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -583,13 +587,82 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(badges[0]).toHaveClass('absolute')
     expect(badges[0]).toHaveClass('top-0')
     expect(badges[0]).toHaveClass('left-0')
-    expect(badges[0]).toHaveClass('h-[1.5rem]')
+    expect(badges[0]).toHaveClass('h-[1rem]')
     expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
 
     expect(badges[1]).toHaveClass('absolute')
     expect(badges[1]).toHaveClass('top-0')
     expect(badges[1]).toHaveClass('left-0')
-    expect(badges[1]).toHaveClass('h-[1.5rem]')
+    expect(badges[1]).toHaveClass('h-[1rem]')
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
+  })
+
+  it('Requirement 5: Test by typing "Paranoia" into Title input box, verifying 8 sheets and side-by-side badges box', async () => {
+    const paranoiaData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      difficulties: [
+        { difficulty: 'basic', name: 'BASIC', color: '#22bb5b' },
+        { difficulty: 'advanced', name: 'ADVANCED', color: '#fb9c2d' },
+        { difficulty: 'expert', name: 'EXPERT', color: '#f64861' },
+        { difficulty: 'master', name: 'MASTER', color: '#9e45e2' },
+      ],
+      songs: [
+        {
+          title: 'Paranoia',
+          category: '東方Project',
+          imageName: 'paranoia.png',
+          sheets: [
+            { type: 'dx', difficulty: 'basic', level: '4' },
+            { type: 'dx', difficulty: 'advanced', level: '7' },
+            { type: 'dx', difficulty: 'expert', level: '9' },
+            { type: 'dx', difficulty: 'master', level: '13' },
+            { type: 'std', difficulty: 'basic', level: '3' },
+            { type: 'std', difficulty: 'advanced', level: '7' },
+            { type: 'std', difficulty: 'expert', level: '10' },
+            { type: 'std', difficulty: 'master', level: '13+' },
+          ],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(paranoiaData)
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('title-input')).toBeInTheDocument()
+    })
+
+    const titleInput = screen.getByTestId('title-input').querySelector('input')!
+    fireEvent.change(titleInput, { target: { value: 'Paranoia' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Paranoia')).toBeInTheDocument()
+    })
+
+    const sheetButtons = screen.getAllByTestId('sheet-button')
+    expect(sheetButtons.length).toBe(8)
+
+    // Verify dx sheets
+    expect(sheetButtons[0]).toHaveTextContent('4')
+    expect(sheetButtons[0]).toHaveTextContent('(dx)')
+    expect(sheetButtons[0]).toHaveAttribute('type', 'button')
+    expect(sheetButtons[0]).toHaveClass('text-sm')
+
+    // Verify std sheets
+    expect(sheetButtons[4]).toHaveTextContent('3')
+    expect(sheetButtons[4]).toHaveTextContent('(std)')
+    expect(sheetButtons[4]).toHaveAttribute('type', 'button')
+
+    // Verify type badges box and both badges side by side
+    const badgesBox = screen.getByTestId('type-badges-box')
+    expect(badgesBox).toBeInTheDocument()
+    const badges = screen.getAllByTestId('sheet-type-badge')
+    expect(badges.length).toBe(2)
+    expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
+    expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
   })
 })
