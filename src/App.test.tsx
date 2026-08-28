@@ -583,11 +583,13 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(badges[0]).toHaveClass('absolute')
     expect(badges[0]).toHaveClass('top-0')
     expect(badges[0]).toHaveClass('left-0')
+    expect(badges[0]).toHaveClass('h-[1.5rem]')
     expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
 
     expect(badges[1]).toHaveClass('absolute')
     expect(badges[1]).toHaveClass('top-0')
     expect(badges[1]).toHaveClass('left-0')
+    expect(badges[1]).toHaveClass('h-[1.5rem]')
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
   })
 })

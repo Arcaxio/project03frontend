@@ -34,7 +34,7 @@ export function getInitialDarkMode(): boolean {
 export interface MaimaiData {
   updateTime?: string
   categories?: Array<string | { category?: string; name?: string; title?: string }>
-  difficulties?: Array<string | { difficulty?: string; name?: string; title?: string }>
+  difficulties?: Array<string | { difficulty?: string; name?: string; title?: string; color?: string }>
   types?: Array<string | { type?: string; name?: string; title?: string }>
   versions?: Array<string | { version?: string; name?: string; title?: string }>
   songs?: Array<{ title?: string; [key: string]: any }>
@@ -338,7 +338,7 @@ function App() {
                           <img
                             src={typeImageUrl}
                             alt={sheetType || ''}
-                            className="absolute top-0 left-0"
+                            className="absolute top-0 left-0 h-[1.5rem]"
                             data-testid="sheet-type-badge"
                           />
                         )}
