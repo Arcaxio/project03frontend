@@ -472,3 +472,122 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     expect(images[0]).toHaveAttribute('loading', 'lazy')
   })
 })
+
+describe('Song Row Layout & Sheet Buttons Requirements', () => {
+  const mockDetailedData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    difficulties: [
+      { difficulty: 'basic', name: 'BASIC', color: '#22bb5b' },
+      { difficulty: 'advanced', name: 'ADVANCED', color: '#fb9c2d' },
+      { difficulty: 'expert', name: 'EXPERT', color: '#f64861' },
+      { difficulty: 'master', name: 'MASTER', color: '#9e45e2' },
+    ],
+    songs: [
+      {
+        title: 'STD Song',
+        imageName: 'cover_std.png',
+        sheets: [
+          { type: 'std', difficulty: 'basic', level: '3' },
+          { type: 'std', difficulty: 'advanced', level: '7' },
+          { type: 'std', difficulty: 'master', level: '11+' },
+        ],
+      },
+      {
+        title: 'DX Song',
+        imageName: 'cover_dx.png',
+        sheets: [
+          { type: 'dx', difficulty: 'basic', level: '4' },
+          { type: 'dx', difficulty: 'expert', level: '9' },
+        ],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockDetailedData)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('Requirement 1: Cover image is 3rem in width and height, container padding is px-2', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const images = screen.getAllByTestId('song-image')
+    expect(images[0]).toHaveClass('w-[3rem]')
+    expect(images[0]).toHaveClass('h-[3rem]')
+
+    const rows = screen.getAllByTestId('song-image').map((img) => img.closest('.h-\\[4rem\\]'))
+    expect(rows[0]).toHaveClass('px-2')
+  })
+
+  it('Requirement 2: Container is justify-between, img and span in first div, maps sheets to 2.5rem buttons with difficulty color and level text', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const row = screen.getByText('STD Song').closest('.h-\\[4rem\\]')!
+    expect(row).toHaveClass('justify-between')
+
+    const firstDiv = screen.getByText('STD Song').parentElement!
+    const imgWrapper = screen.getAllByTestId('song-image')[0].parentElement!
+    expect(firstDiv).toContainElement(imgWrapper)
+    expect(firstDiv).toContainElement(screen.getByText('STD Song'))
+
+    const sheetContainers = screen.getAllByTestId('song-sheets-container')
+    const stdButtons = sheetContainers[0].querySelectorAll('button')
+    expect(stdButtons.length).toBe(3)
+
+    expect(stdButtons[0]).toHaveClass('w-[2.5rem]')
+    expect(stdButtons[0]).toHaveClass('h-[2.5rem]')
+    expect(stdButtons[0]).toHaveTextContent('3')
+    expect(stdButtons[0]).toHaveStyle({ backgroundColor: 'rgb(34, 187, 91)' }) // #22bb5b
+
+    expect(stdButtons[1]).toHaveTextContent('7')
+    expect(stdButtons[1]).toHaveStyle({ backgroundColor: 'rgb(251, 156, 45)' }) // #fb9c2d
+
+    expect(stdButtons[2]).toHaveTextContent('11+')
+    expect(stdButtons[2]).toHaveStyle({ backgroundColor: 'rgb(158, 69, 226)' }) // #9e45e2
+  })
+
+  it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const stdFirstDiv = screen.getByText('STD Song').parentElement!
+    expect(stdFirstDiv).toHaveClass('relative')
+
+    const badges = screen.getAllByTestId('sheet-type-badge')
+    expect(badges.length).toBe(2)
+
+    expect(badges[0]).toHaveClass('absolute')
+    expect(badges[0]).toHaveClass('top-0')
+    expect(badges[0]).toHaveClass('left-0')
+    expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
+
+    expect(badges[1]).toHaveClass('absolute')
+    expect(badges[1]).toHaveClass('top-0')
+    expect(badges[1]).toHaveClass('left-0')
+    expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
+  })
+})
