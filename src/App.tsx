@@ -297,28 +297,79 @@ function App() {
               >
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                   const song = filteredSongs[virtualRow.index]
+
+                  const sheetType = song?.sheets?.[0]?.type || song?.sheets?.find((s: any) => s?.type)?.type
+                  let typeImageUrl: string | null = null
+                  if (sheetType && sheetType.toLowerCase() === 'std') {
+                    typeImageUrl = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png'
+                  } else if (sheetType && sheetType.toLowerCase() === 'dx') {
+                    typeImageUrl = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png'
+                  }
+
+                  const getDifficultyColor = (diffKey?: string) => {
+                    if (!diffKey || !maimaiData?.difficulties) return undefined
+                    const target = diffKey.toLowerCase()
+                    const found = maimaiData.difficulties.find((d: any) => {
+                      if (typeof d === 'string') return d.toLowerCase() === target
+                      if (typeof d === 'object' && d !== null) {
+                        return (
+                          (d.difficulty && String(d.difficulty).toLowerCase() === target) ||
+                          (d.name && String(d.name).toLowerCase() === target) ||
+                          (d.title && String(d.title).toLowerCase() === target)
+                        )
+                      }
+                      return false
+                    })
+                    return typeof found === 'object' && found !== null ? found.color : undefined
+                  }
+
                   return (
                     <div
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className="h-[4rem] flex items-center px-4 gap-3 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                      className="h-[4rem] flex items-center justify-between px-2 bg-white dark:bg-gray-700/50 rounded shadow-sm"
                       style={{
                         height: '4rem',
                       }}
                     >
-                      <div className="w-10 h-10 shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
-                        {song?.imageName && (
+                      <div className="relative flex items-center gap-3 min-w-0">
+                        {typeImageUrl && (
                           <img
-                            src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
-                            alt={song?.title || ''}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                            data-testid="song-image"
+                            src={typeImageUrl}
+                            alt={sheetType || ''}
+                            className="absolute top-0 left-0"
+                            data-testid="sheet-type-badge"
                           />
                         )}
+                        <div className="w-[3rem] h-[3rem] shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
+                          {song?.imageName && (
+                            <img
+                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
+                              alt={song?.title || ''}
+                              loading="lazy"
+                              className="w-[3rem] h-[3rem] object-cover"
+                              data-testid="song-image"
+                            />
+                          )}
+                        </div>
+                        <span className="truncate">{song?.title}</span>
                       </div>
-                      <span className="truncate">{song?.title}</span>
+                      <div className="flex items-center gap-1 shrink-0" data-testid="song-sheets-container">
+                        {song?.sheets?.map((sheet: any, idx: number) => {
+                          const color = getDifficultyColor(sheet?.difficulty)
+                          return (
+                            <button
+                              key={idx}
+                              className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex items-center justify-center text-xs"
+                              style={{ backgroundColor: color }}
+                              data-testid="sheet-button"
+                            >
+                              {sheet?.level}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   )
                 })}
