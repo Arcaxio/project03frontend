@@ -526,11 +526,12 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(images[0]).toHaveClass('w-[4.5rem]')
     expect(images[0]).toHaveClass('h-[4.5rem]')
 
-    const rows = screen.getAllByTestId('song-image').map((img) => img.closest('.h-\\[5\\.5rem\\]'))
+    const rows = screen.getAllByTestId('virtual-row')
     expect(rows[0]).toHaveClass('px-2')
+    expect(rows[0]).toHaveClass('min-h-[5.5rem]')
   })
 
-  it('Requirement 2: Container is justify-between, img and span in first div, maps sheets to 2.5rem buttons with type="button", text-sm, difficulty color and level text', async () => {
+  it('Requirement 2: Container is justify-between on sm, img and span in first div, maps sheets to 2.5rem buttons with type="button", text-sm, difficulty color and level text', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -540,8 +541,11 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
       expect(screen.getByTestId('results-container')).toBeInTheDocument()
     })
 
-    const row = screen.getByText('STD Song').closest('.h-\\[5\\.5rem\\]')!
-    expect(row).toHaveClass('justify-between')
+    const row = screen.getByText('STD Song').closest('[data-testid="virtual-row"]')!
+    expect(row).toHaveClass('sm:justify-between')
+    expect(row).toHaveClass('justify-start')
+    expect(row).toHaveClass('flex-col')
+    expect(row).toHaveClass('sm:flex-row')
 
     const firstDiv = screen.getByText('STD Song').parentElement!
     const imgWrapper = screen.getAllByTestId('song-image')[0].parentElement!
@@ -664,6 +668,43 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(badges.length).toBe(2)
     expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
+  })
+
+  it('renders dual std and dx sheets in 2 rows with gap-1 and upper row dx / lower row std', async () => {
+    const dualData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      difficulties: [{ difficulty: 'basic', name: 'BASIC', color: '#22bb5b' }],
+      songs: [
+        {
+          title: 'Dual Song',
+          sheets: [
+            { type: 'std', difficulty: 'basic', level: '3' },
+            { type: 'dx', difficulty: 'basic', level: '4' },
+          ],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(dualData)
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const container = screen.getByTestId('song-sheets-container')
+    expect(container).toHaveClass('flex-col')
+    expect(container).toHaveClass('gap-1')
+    expect(container).toHaveClass('justify-start')
+
+    const rows = container.children
+    expect(rows.length).toBe(2)
+    expect(rows[0]).toHaveTextContent('(dx)')
+    expect(rows[1]).toHaveTextContent('(std)')
   })
 })
 

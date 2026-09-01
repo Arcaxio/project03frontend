@@ -56,6 +56,15 @@ function App() {
   const muiTheme = useMemo(
     () =>
       createTheme({
+        breakpoints: {
+          values: {
+            xs: 0,
+            sm: 640,
+            md: 768,
+            lg: 1024,
+            xl: 1280,
+          },
+        },
         palette: {
           mode: darkMode ? 'dark' : 'light',
         },
@@ -360,17 +369,42 @@ function App() {
                     return typeof found === 'object' && found !== null ? found.color : undefined
                   }
 
+                  const stdSheets = song?.sheets?.filter((s: any) => s?.type?.toLowerCase() === 'std') || []
+                  const dxSheets = song?.sheets?.filter((s: any) => s?.type?.toLowerCase() === 'dx') || []
+                  const hasBothTypes = stdSheets.length > 0 && dxSheets.length > 0
+
+                  const renderSheetButton = (sheet: any, idx: number) => {
+                    const color = getDifficultyColor(sheet?.difficulty)
+                    return (
+                      <button
+                        type="button"
+                        key={idx}
+                        className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex flex-col items-center justify-center text-sm leading-tight"
+                        style={{ backgroundColor: color }}
+                        data-testid="sheet-button"
+                      >
+                        <span>{sheet?.level}</span>
+                        {sheet?.type && (
+                          <span className="text-[10px] font-normal leading-none">
+                            ({sheet.type.toLowerCase()})
+                          </span>
+                        )}
+                      </button>
+                    )
+                  }
+
                   return (
                     <div
                       key={virtualRow.key}
                       data-index={virtualRow.index}
+                      data-testid="virtual-row"
                       ref={rowVirtualizer.measureElement}
-                      className="h-[5.5rem] flex items-center justify-between px-2 bg-white dark:bg-gray-700/50 rounded shadow-sm"
+                      className="min-h-[5.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-start sm:justify-between px-2 py-2 sm:py-0 bg-white dark:bg-gray-700/50 rounded shadow-sm gap-2 sm:gap-0"
                       style={{
-                        height: '5.5rem',
+                        minHeight: '5.5rem',
                       }}
                     >
-                      <div className="relative flex items-center gap-3 min-w-0">
+                      <div className="relative flex items-center justify-start gap-3 min-w-0 w-full sm:w-auto">
                         {sheetTypes.length > 1 ? (
                           <div className="absolute top-0 left-0 flex items-center gap-0.5 z-10" data-testid="type-badges-box">
                             {sheetTypes.map((t) => (
@@ -404,27 +438,20 @@ function App() {
                         </div>
                         <span className="truncate">{song?.title}</span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0" data-testid="song-sheets-container">
-                        {song?.sheets?.map((sheet: any, idx: number) => {
-                          const color = getDifficultyColor(sheet?.difficulty)
-                          return (
-                            <button
-                              type="button"
-                              key={idx}
-                              className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex flex-col items-center justify-center text-sm leading-tight"
-                              style={{ backgroundColor: color }}
-                              data-testid="sheet-button"
-                            >
-                              <span>{sheet?.level}</span>
-                              {sheet?.type && (
-                                <span className="text-[10px] font-normal leading-none">
-                                  ({sheet.type.toLowerCase()})
-                                </span>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
+                      {hasBothTypes ? (
+                        <div className="flex flex-col gap-1 justify-start shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                          <div className="flex items-center justify-start gap-2">
+                            {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                          </div>
+                          <div className="flex items-center justify-start gap-2">
+                            {stdSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-start gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                          {song?.sheets?.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
