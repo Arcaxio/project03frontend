@@ -2,8 +2,11 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
+import ImportExportIcon from '@mui/icons-material/ImportExport'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
+import Popover from '@mui/material/Popover'
+import Button from '@mui/material/Button'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -50,6 +53,19 @@ function App() {
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [title, setTitle] = useState<string>('')
   const [level, setLevel] = useState<string>('')
+
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
+  const [selectedSong, setSelectedSong] = useState<any>(null)
+  const [selectedSheet, setSelectedSheet] = useState<any>(null)
+  const [targetScore, setTargetScore] = useState<number | string>('')
+  const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('maimaiB50Charts')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
 
   const parentRef = useRef<HTMLDivElement>(null)
 
@@ -147,6 +163,37 @@ function App() {
 
   const toggleDarkMode = () => {
     setDarkMode((prev) => !prev)
+  }
+
+  const handleSheetClick = (event: React.MouseEvent<HTMLButtonElement>, song: any, sheet: any) => {
+    setAnchorEl(event.currentTarget)
+    setSelectedSong(song)
+    setSelectedSheet(sheet)
+    setTargetScore('')
+  }
+
+  const handleClosePopover = () => {
+    setAnchorEl(null)
+    setSelectedSong(null)
+    setSelectedSheet(null)
+  }
+
+  const handleConfirm = () => {
+    if (maimaiB50Charts.length >= 50) return
+
+    const newChart = {
+      songId: selectedSong?.songId,
+      imageName: selectedSong?.imageName,
+      internalLevelValue: selectedSheet?.internalLevelValue,
+      target: targetScore,
+      type: selectedSheet?.type,
+      rating: 0,
+    }
+
+    const updated = [...maimaiB50Charts, newChart]
+    setMaimaiB50Charts(updated)
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(updated))
+    handleClosePopover()
   }
 
   const extractItems = (raw: any[] | undefined, primaryKey: string): string[] => {
@@ -253,7 +300,9 @@ function App() {
             Header Center
           </div>
           <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
-            Header Right
+            <IconButton aria-label="import export" data-testid="import-export-button" color="inherit">
+              <ImportExportIcon data-testid="import-export-icon" />
+            </IconButton>
           </div>
         </header>
         <main className="pt-20 p-6 space-y-6">
@@ -373,15 +422,16 @@ function App() {
                   const dxSheets = song?.sheets?.filter((s: any) => s?.type?.toLowerCase() === 'dx') || []
                   const hasBothTypes = stdSheets.length > 0 && dxSheets.length > 0
 
-                  const renderSheetButton = (sheet: any, idx: number) => {
+                  const renderSheetButton = (sheet: any, idx: number, song: any) => {
                     const color = getDifficultyColor(sheet?.difficulty)
                     return (
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
+                        onClick={(e) => handleSheetClick(e, song, sheet)}
                       >
                         <span>{sheet?.level}</span>
                         {sheet?.type && (
@@ -441,15 +491,15 @@ function App() {
                       {hasBothTypes ? (
                         <div className="flex flex-col gap-2 items-center justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           <div className="flex items-center justify-start gap-2">
-                            {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                            {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx, song))}
                           </div>
                           <div className="flex items-center justify-start gap-2">
-                            {stdSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                            {stdSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx, song))}
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
-                          {song?.sheets?.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
+                          {song?.sheets?.map((sheet: any, idx: number) => renderSheetButton(sheet, idx, song))}
                         </div>
                       )}
                     </div>
@@ -460,10 +510,102 @@ function App() {
           </div>
 
           <div
-            className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID"
+            className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex flex-wrap gap-4"
             data-testid="display-container"
           >
+            {maimaiB50Charts.map((item: any, index: number) => (
+              <div
+                key={index}
+                className="flex flex-col border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
+                style={{ minHeight: '4rem', minWidth: '6rem' }}
+                data-testid="b50-chart-item"
+              >
+                <div className="flex items-center justify-between gap-1 text-xs mb-1" data-testid="b50-top-div">
+                  <span>{item?.songId}</span>
+                  {item?.type && (
+                    <img
+                      src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
+                      alt={item.type}
+                      className="w-6"
+                      data-testid="b50-type-badge"
+                    />
+                  )}
+                </div>
+                <div className="flex items-center gap-2" data-testid="b50-bottom-div">
+                  <div className="shrink-0">
+                    {item?.imageName && (
+                      <img
+                        src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
+                        alt={item?.songId || ''}
+                        className="w-[3rem] h-[3rem] object-cover rounded"
+                        style={{ width: '3rem', height: '3rem' }}
+                        data-testid="b50-chart-img"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
+                    <div>{item?.target}</div>
+                    <span className="text-xl font-bold">{item?.rating}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+
+          <Popover
+            open={Boolean(anchorEl)}
+            anchorEl={anchorEl}
+            onClose={handleClosePopover}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'center',
+            }}
+            transformOrigin={{
+              vertical: 'bottom',
+              horizontal: 'center',
+            }}
+            data-testid="sheet-popover"
+          >
+            <div className="p-4 flex flex-col gap-3 min-w-[200px]" data-testid="popover-content">
+              <div className="grid grid-cols-2 gap-2" data-testid="popover-grid">
+                {[
+                  { label: 'S', value: 97 },
+                  { label: 'S+', value: 98 },
+                  { label: 'SS', value: 99 },
+                  { label: 'SS+', value: 99.5 },
+                  { label: 'SSS', value: 100 },
+                  { label: 'SSS+', value: 100.5 },
+                ].map((btn) => (
+                  <Button
+                    key={btn.label}
+                    variant="outlined"
+                    size="small"
+                    onClick={() => setTargetScore(btn.value)}
+                    data-testid={`score-btn-${btn.label}`}
+                  >
+                    {btn.label}
+                  </Button>
+                ))}
+              </div>
+              <TextField
+                label="Target"
+                size="small"
+                value={targetScore}
+                onChange={(e) => setTargetScore(e.target.value)}
+                data-testid="target-textfield"
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={maimaiB50Charts.length >= 50}
+                onClick={handleConfirm}
+                style={{ textTransform: 'none' }}
+                data-testid="confirm-btn"
+              >
+                confirm
+              </Button>
+            </div>
+          </Popover>
         </main>
       </div>
     </ThemeProvider>

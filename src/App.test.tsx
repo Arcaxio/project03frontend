@@ -258,6 +258,195 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 })
 
+describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Requirements', () => {
+  const mockB50Data = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    difficulties: [{ difficulty: 'expert', name: 'EXPERT', color: '#f64861' }],
+    songs: [
+      {
+        songId: 'song_01',
+        title: 'Test Song 1',
+        imageName: 'cover_1.png',
+        sheets: [
+          { type: 'dx', difficulty: 'expert', level: '12', internalLevelValue: 12.3 },
+        ],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockB50Data)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('Requirement 1: Renders IconButton using @mui/icons-material/ImportExport on header right', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('header-right')).toBeInTheDocument()
+    })
+
+    const headerRight = screen.getByTestId('header-right')
+    const importExportBtn = screen.getByTestId('import-export-button')
+    const importExportIcon = screen.getByTestId('import-export-icon')
+
+    expect(headerRight).toContainElement(importExportBtn)
+    expect(importExportBtn).toContainElement(importExportIcon)
+  })
+
+  it('Requirement 2 & 3: Pressing sheet button opens popover with 3x2 grid of 6 target score buttons, Target TextField, and confirm button', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sheet-popover')).toBeInTheDocument()
+    })
+
+    const popoverGrid = screen.getByTestId('popover-grid')
+    expect(popoverGrid).toHaveClass('grid')
+    expect(popoverGrid).toHaveClass('grid-cols-2')
+
+    expect(screen.getByTestId('score-btn-S')).toHaveTextContent('S')
+    expect(screen.getByTestId('score-btn-S+')).toHaveTextContent('S+')
+    expect(screen.getByTestId('score-btn-SS')).toHaveTextContent('SS')
+    expect(screen.getByTestId('score-btn-SS+')).toHaveTextContent('SS+')
+    expect(screen.getByTestId('score-btn-SSS')).toHaveTextContent('SSS')
+    expect(screen.getByTestId('score-btn-SSS+')).toHaveTextContent('SSS+')
+
+    expect(screen.getByLabelText('Target')).toBeInTheDocument()
+    expect(screen.getByTestId('confirm-btn')).toHaveTextContent('confirm')
+  })
+
+  it('Requirement 4: Confirm button appends object to localStorage "maimaiB50Charts" with exact format', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('score-btn-SS+')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('score-btn-SS+'))
+
+    const targetInput = screen.getByLabelText('Target')
+    expect(targetInput).toHaveValue('99.5')
+
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    const storedChartsStr = localStorage.getItem('maimaiB50Charts')
+    expect(storedChartsStr).not.toBeNull()
+    const storedCharts = JSON.parse(storedChartsStr!)
+    expect(storedCharts).toEqual([
+      {
+        songId: 'song_01',
+        imageName: 'cover_1.png',
+        internalLevelValue: 12.3,
+        target: 99.5,
+        type: 'dx',
+        rating: 0,
+      },
+    ])
+  })
+
+  it('Requirement 5: Confirm button is disabled when maimaiB50Charts has 50 objects', async () => {
+    const full50 = Array.from({ length: 50 }, (_, i) => ({
+      songId: `song_${i}`,
+      imageName: `cover_${i}.png`,
+      internalLevelValue: 10,
+      target: 100,
+      type: 'dx',
+      rating: 0,
+    }))
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(full50))
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
+    })
+
+    expect(screen.getByTestId('confirm-btn')).toBeDisabled()
+  })
+
+  it('Requirement 6: In the GRID div, maps maimaiB50Charts with minHeight 4rem, minWidth 6rem, top div (songId, type img), bottom div (flex with cover img 3rem x 3rem, target, rating text-xl)', async () => {
+    const sampleCharts = [
+      {
+        songId: 'song_dx_01',
+        imageName: 'cover_sample.png',
+        internalLevelValue: 13.5,
+        target: 100.5,
+        type: 'dx',
+        rating: 0,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const chartItems = screen.getAllByTestId('b50-chart-item')
+    expect(chartItems.length).toBe(1)
+
+    const item = chartItems[0]
+    expect(item).toHaveStyle({ minHeight: '4rem', minWidth: '6rem' })
+    expect(item).toHaveClass('flex')
+    expect(item).toHaveClass('flex-col')
+
+    const topDiv = screen.getByTestId('b50-top-div')
+    expect(topDiv).toHaveTextContent('song_dx_01')
+    const typeImg = screen.getByTestId('b50-type-badge')
+    expect(typeImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
+
+    const bottomDiv = screen.getByTestId('b50-bottom-div')
+    expect(bottomDiv).toHaveClass('flex')
+
+    const coverImg = screen.getByTestId('b50-chart-img')
+    expect(coverImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover_sample.png')
+    expect(coverImg).toHaveStyle({ width: '3rem', height: '3rem' })
+
+    const rightDiv = screen.getByTestId('b50-right-div')
+    expect(rightDiv).toHaveTextContent('100.5')
+    const ratingSpan = rightDiv.querySelector('span')
+    expect(ratingSpan).toHaveClass('text-xl')
+    expect(ratingSpan).toHaveTextContent('0')
+  })
+})
+
 describe('Dropdowns and Main Layout Requirements', () => {
   const mockFullData = {
     updateTime: '2026-08-21T01:13:03.602Z',
