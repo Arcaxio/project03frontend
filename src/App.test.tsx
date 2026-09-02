@@ -400,7 +400,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(screen.getByTestId('confirm-btn')).toBeDisabled()
   })
 
-  it('Requirement 6: In the GRID div, maps maimaiB50Charts with minHeight 4rem, minWidth 6rem, top div (songId, type img), bottom div (flex with cover img 3rem x 3rem, target, rating text-xl)', async () => {
+  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[5rem], w-[10rem], top div (songId with truncate className, type img with h-3), bottom div (flex with cover img 3rem x 3rem, target, rating text-xl)', async () => {
     const sampleCharts = [
       {
         songId: 'song_dx_01',
@@ -423,13 +423,18 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(chartItems.length).toBe(1)
 
     const item = chartItems[0]
-    expect(item).toHaveStyle({ minHeight: '4rem', minWidth: '6rem' })
+    expect(item).toHaveClass('h-[5rem]')
+    expect(item).toHaveClass('w-[10rem]')
     expect(item).toHaveClass('flex')
     expect(item).toHaveClass('flex-col')
 
     const topDiv = screen.getByTestId('b50-top-div')
     expect(topDiv).toHaveTextContent('song_dx_01')
+    const topSpan = topDiv.querySelector('span')
+    expect(topSpan).toHaveClass('truncate')
+
     const typeImg = screen.getByTestId('b50-type-badge')
+    expect(typeImg).toHaveClass('h-3')
     expect(typeImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
 
     const bottomDiv = screen.getByTestId('b50-bottom-div')
@@ -743,6 +748,8 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
 
     const sheetContainers = screen.getAllByTestId('song-sheets-container')
     expect(sheetContainers[0]).toHaveClass('gap-2')
+    expect(sheetContainers[0]).toHaveClass('items-center')
+    expect(sheetContainers[0]).toHaveClass('sm:items-end')
     expect(sheetContainers[0]).toHaveClass('justify-center')
     expect(sheetContainers[0]).toHaveClass('sm:justify-end')
     const stdButtons = sheetContainers[0].querySelectorAll('button')
@@ -900,6 +907,8 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     const container = screen.getByTestId('song-sheets-container')
     expect(container).toHaveClass('flex-col')
     expect(container).toHaveClass('gap-2')
+    expect(container).toHaveClass('items-center')
+    expect(container).toHaveClass('sm:items-end')
     expect(container).toHaveClass('justify-center')
     expect(container).toHaveClass('sm:justify-end')
 
