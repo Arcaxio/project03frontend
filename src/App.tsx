@@ -519,7 +519,7 @@ function App() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[10rem] text-white"
                   style={{ backgroundColor: color, borderColor: color }}
                   data-testid="b50-chart-item"
                 >
