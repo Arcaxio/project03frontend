@@ -439,7 +439,7 @@ function App() {
                         <span className="truncate">{song?.title}</span>
                       </div>
                       {hasBothTypes ? (
-                        <div className="flex flex-col gap-2 justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                        <div className="flex flex-col gap-2 items-center justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           <div className="flex items-center justify-start gap-2">
                             {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
                           </div>
