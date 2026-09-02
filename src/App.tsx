@@ -187,6 +187,7 @@ function App() {
       internalLevelValue: selectedSheet?.internalLevelValue,
       target: targetScore,
       type: selectedSheet?.type,
+      difficulty: selectedSheet?.difficulty,
       rating: 0,
     }
 
@@ -194,6 +195,23 @@ function App() {
     setMaimaiB50Charts(updated)
     localStorage.setItem('maimaiB50Charts', JSON.stringify(updated))
     handleClosePopover()
+  }
+
+  const getDifficultyColor = (diffKey?: string) => {
+    if (!diffKey || !maimaiData?.difficulties) return undefined
+    const target = diffKey.toLowerCase()
+    const found = maimaiData.difficulties.find((d: any) => {
+      if (typeof d === 'string') return d.toLowerCase() === target
+      if (typeof d === 'object' && d !== null) {
+        return (
+          (d.difficulty && String(d.difficulty).toLowerCase() === target) ||
+          (d.name && String(d.name).toLowerCase() === target) ||
+          (d.title && String(d.title).toLowerCase() === target)
+        )
+      }
+      return false
+    })
+    return typeof found === 'object' && found !== null ? found.color : undefined
   }
 
   const extractItems = (raw: any[] | undefined, primaryKey: string): string[] => {
@@ -305,7 +323,7 @@ function App() {
             </IconButton>
           </div>
         </header>
-        <main className="pt-20 p-6 space-y-6">
+        <main className="pt-20 p-5 space-y-6">
           <div
             className="flex flex-wrap justify-center items-center gap-4 w-full max-w-4xl mx-auto FILTERS"
             data-testid="dropdowns-container"
@@ -401,23 +419,6 @@ function App() {
                     )
                   ) as string[]
 
-                  const getDifficultyColor = (diffKey?: string) => {
-                    if (!diffKey || !maimaiData?.difficulties) return undefined
-                    const target = diffKey.toLowerCase()
-                    const found = maimaiData.difficulties.find((d: any) => {
-                      if (typeof d === 'string') return d.toLowerCase() === target
-                      if (typeof d === 'object' && d !== null) {
-                        return (
-                          (d.difficulty && String(d.difficulty).toLowerCase() === target) ||
-                          (d.name && String(d.name).toLowerCase() === target) ||
-                          (d.title && String(d.title).toLowerCase() === target)
-                        )
-                      }
-                      return false
-                    })
-                    return typeof found === 'object' && found !== null ? found.color : undefined
-                  }
-
                   const stdSheets = song?.sheets?.filter((s: any) => s?.type?.toLowerCase() === 'std') || []
                   const dxSheets = song?.sheets?.filter((s: any) => s?.type?.toLowerCase() === 'dx') || []
                   const hasBothTypes = stdSheets.length > 0 && dxSheets.length > 0
@@ -510,15 +511,18 @@ function App() {
           </div>
 
           <div
-            className="w-full min-h-[60vh] p-4 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex flex-wrap gap-4"
+            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex flex-wrap content-start justify-center gap-2"
             data-testid="display-container"
           >
-            {maimaiB50Charts.map((item: any, index: number) => (
-              <div
-                key={index}
-                className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem]"
-                data-testid="b50-chart-item"
-              >
+            {maimaiB50Charts.map((item: any, index: number) => {
+              const color = getDifficultyColor(item?.difficulty)
+              return (
+                <div
+                  key={index}
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white"
+                  style={{ backgroundColor: color, borderColor: color }}
+                  data-testid="b50-chart-item"
+                >
                 <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
                   <span className="truncate">{item?.songId}</span>
                   {item?.type && (
@@ -549,7 +553,8 @@ function App() {
                   </div>
                 </div>
               </div>
-            ))}
+            )
+          })}
           </div>
 
           <Popover

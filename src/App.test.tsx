@@ -365,6 +365,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
         internalLevelValue: 12.3,
         target: 99.5,
         type: 'dx',
+        difficulty: 'expert',
         rating: 0,
       },
     ])
@@ -408,6 +409,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
         internalLevelValue: 13.5,
         target: 100.5,
         type: 'dx',
+        difficulty: 'expert',
         rating: 0,
       },
     ]
@@ -428,6 +430,8 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(item).toHaveClass('justify-between')
     expect(item).toHaveClass('flex')
     expect(item).toHaveClass('flex-col')
+    expect(item).toHaveClass('text-white')
+    expect(item).toHaveStyle({ backgroundColor: 'rgb(246, 72, 97)', borderColor: 'rgb(246, 72, 97)' })
 
     const topDiv = screen.getByTestId('b50-top-div')
     expect(topDiv).toHaveTextContent('song_dx_01')
@@ -532,7 +536,7 @@ describe('Dropdowns and Main Layout Requirements', () => {
     expect(versionFC).toHaveClass('sm:w-[calc(50%-0.5rem)]')
   })
 
-  it('renders a large display div below the dropdowns taking min 60% innerWindow height with p-4 padding', async () => {
+  it('renders a large display div below the dropdowns taking min 60% innerWindow height with p-2 padding and content-start justify-center gap-2', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -541,7 +545,13 @@ describe('Dropdowns and Main Layout Requirements', () => {
 
     const displayDiv = screen.getByTestId('display-container')
     expect(displayDiv).toHaveClass('min-h-[60vh]')
-    expect(displayDiv).toHaveClass('p-4')
+    expect(displayDiv).toHaveClass('p-2')
+    expect(displayDiv).toHaveClass('content-start')
+    expect(displayDiv).toHaveClass('justify-center')
+    expect(displayDiv).toHaveClass('gap-2')
+
+    const mainElement = displayDiv.closest('main')!
+    expect(mainElement).toHaveClass('p-5')
   })
 })
 
