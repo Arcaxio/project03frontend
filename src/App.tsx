@@ -489,7 +489,7 @@ function App() {
                         <span className="truncate">{song?.title}</span>
                       </div>
                       {hasBothTypes ? (
-                        <div className="flex flex-col gap-2 items-center justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                        <div className="flex flex-col gap-2 items-center sm:items-end justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           <div className="flex items-center justify-start gap-2">
                             {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx, song))}
                           </div>
@@ -498,7 +498,7 @@ function App() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                        <div className="flex items-center sm:items-end justify-center sm:justify-end gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           {song?.sheets?.map((sheet: any, idx: number) => renderSheetButton(sheet, idx, song))}
                         </div>
                       )}
@@ -516,17 +516,16 @@ function App() {
             {maimaiB50Charts.map((item: any, index: number) => (
               <div
                 key={index}
-                className="flex flex-col border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800"
-                style={{ minHeight: '4rem', minWidth: '6rem' }}
+                className="flex flex-col border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[5rem] w-[10rem]"
                 data-testid="b50-chart-item"
               >
                 <div className="flex items-center justify-between gap-1 text-xs mb-1" data-testid="b50-top-div">
-                  <span>{item?.songId}</span>
+                  <span className="truncate">{item?.songId}</span>
                   {item?.type && (
                     <img
                       src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
                       alt={item.type}
-                      className="w-6"
+                      className="h-3"
                       data-testid="b50-type-badge"
                     />
                   )}
