@@ -379,13 +379,13 @@ function App() {
                       <button
                         type="button"
                         key={idx}
-                        className="w-[2.5rem] h-[2.5rem] rounded text-white font-bold flex flex-col items-center justify-center text-sm leading-tight"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
                       >
                         <span>{sheet?.level}</span>
                         {sheet?.type && (
-                          <span className="text-[10px] font-normal leading-none">
+                          <span className="text-xs sm:text-[10px] font-normal leading-none">
                             ({sheet.type.toLowerCase()})
                           </span>
                         )}
@@ -399,20 +399,20 @@ function App() {
                       data-index={virtualRow.index}
                       data-testid="virtual-row"
                       ref={rowVirtualizer.measureElement}
-                      className="min-h-[5.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-start sm:justify-between px-2 py-2 sm:py-0 bg-white dark:bg-gray-700/50 rounded shadow-sm gap-2 sm:gap-0"
+                      className="min-h-[6rem] flex flex-col sm:flex-row items-start sm:items-center justify-start sm:justify-between p-2 bg-white dark:bg-gray-700/50 rounded shadow-sm gap-2 sm:gap-0"
                       style={{
-                        minHeight: '5.5rem',
+                        minHeight: '6rem',
                       }}
                     >
                       <div className="relative flex items-center justify-start gap-3 min-w-0 w-full sm:w-auto">
                         {sheetTypes.length > 1 ? (
-                          <div className="absolute top-0 left-0 flex items-center gap-0.5 z-10" data-testid="type-badges-box">
+                          <div className="absolute top-0 left-0 flex items-center z-10" data-testid="type-badges-box">
                             {sheetTypes.map((t) => (
                               <img
                                 key={t}
                                 src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${t}.png`}
                                 alt={t}
-                                className="h-[1rem]"
+                                className="w-[2.5rem]"
                                 data-testid="sheet-type-badge"
                               />
                             ))}
@@ -421,17 +421,17 @@ function App() {
                           <img
                             src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${sheetTypes[0]}.png`}
                             alt={sheetTypes[0]}
-                            className="absolute top-0 left-0 h-[1rem]"
+                            className="absolute top-0 left-0 w-[2.5rem]"
                             data-testid="sheet-type-badge"
                           />
                         ) : null}
-                        <div className="w-[4.5rem] h-[4.5rem] shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
+                        <div className="w-[5rem] h-[5rem] shrink-0 bg-gray-300 dark:bg-gray-600 rounded overflow-hidden flex items-center justify-center">
                           {song?.imageName && (
                             <img
                               src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${song.imageName}`}
                               alt={song?.title || ''}
                               loading="lazy"
-                              className="w-[4.5rem] h-[4.5rem] object-cover"
+                              className="w-[5rem] h-[5rem] object-cover"
                               data-testid="song-image"
                             />
                           )}
@@ -439,7 +439,7 @@ function App() {
                         <span className="truncate">{song?.title}</span>
                       </div>
                       {hasBothTypes ? (
-                        <div className="flex flex-col gap-1 justify-start shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                        <div className="flex flex-col gap-2 justify-center sm:justify-end shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           <div className="flex items-center justify-start gap-2">
                             {dxSheets.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
                           </div>
@@ -448,7 +448,7 @@ function App() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-start gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
+                        <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 w-full sm:w-auto" data-testid="song-sheets-container">
                           {song?.sheets?.map((sheet: any, idx: number) => renderSheetButton(sheet, idx))}
                         </div>
                       )}
