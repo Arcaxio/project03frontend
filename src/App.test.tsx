@@ -400,7 +400,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(screen.getByTestId('confirm-btn')).toBeDisabled()
   })
 
-  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[5rem], w-[10rem], top div (songId with truncate className, type img with h-3), bottom div (flex with cover img 3rem x 3rem, target, rating text-xl)', async () => {
+  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[6rem], w-[12rem], top div (songId with truncate className, type img with h-3, no mb-1), bottom div (flex with cover img 3.5rem x 3.5rem, internalLevelValue above target, rating text-xl)', async () => {
     const sampleCharts = [
       {
         songId: 'song_dx_01',
@@ -423,13 +423,15 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(chartItems.length).toBe(1)
 
     const item = chartItems[0]
-    expect(item).toHaveClass('h-[5rem]')
-    expect(item).toHaveClass('w-[10rem]')
+    expect(item).toHaveClass('h-[6rem]')
+    expect(item).toHaveClass('w-[12rem]')
+    expect(item).toHaveClass('justify-between')
     expect(item).toHaveClass('flex')
     expect(item).toHaveClass('flex-col')
 
     const topDiv = screen.getByTestId('b50-top-div')
     expect(topDiv).toHaveTextContent('song_dx_01')
+    expect(topDiv).not.toHaveClass('mb-1')
     const topSpan = topDiv.querySelector('span')
     expect(topSpan).toHaveClass('truncate')
 
@@ -442,10 +444,12 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
 
     const coverImg = screen.getByTestId('b50-chart-img')
     expect(coverImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover_sample.png')
-    expect(coverImg).toHaveStyle({ width: '3rem', height: '3rem' })
+    expect(coverImg).toHaveStyle({ width: '3.5rem', height: '3.5rem' })
 
     const rightDiv = screen.getByTestId('b50-right-div')
-    expect(rightDiv).toHaveTextContent('100.5')
+    expect(rightDiv).toHaveTextContent('13.5100.50')
+    expect(rightDiv.children[0]).toHaveTextContent('13.5')
+    expect(rightDiv.children[1]).toHaveTextContent('100.5')
     const ratingSpan = rightDiv.querySelector('span')
     expect(ratingSpan).toHaveClass('text-xl')
     expect(ratingSpan).toHaveTextContent('0')
