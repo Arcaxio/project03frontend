@@ -516,10 +516,10 @@ function App() {
             {maimaiB50Charts.map((item: any, index: number) => (
               <div
                 key={index}
-                className="flex flex-col border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[5rem] w-[10rem]"
+                className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem]"
                 data-testid="b50-chart-item"
               >
-                <div className="flex items-center justify-between gap-1 text-xs mb-1" data-testid="b50-top-div">
+                <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
                   <span className="truncate">{item?.songId}</span>
                   {item?.type && (
                     <img
@@ -536,13 +536,14 @@ function App() {
                       <img
                         src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
                         alt={item?.songId || ''}
-                        className="w-[3rem] h-[3rem] object-cover rounded"
-                        style={{ width: '3rem', height: '3rem' }}
+                        className="w-[3.5rem] h-[3.5rem] object-cover rounded"
+                        style={{ width: '3.5rem', height: '3.5rem' }}
                         data-testid="b50-chart-img"
                       />
                     )}
                   </div>
                   <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
+                    <div>{item?.internalLevelValue}</div>
                     <div>{item?.target}</div>
                     <span className="text-xl font-bold">{item?.rating}</span>
                   </div>
