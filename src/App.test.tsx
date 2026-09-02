@@ -512,7 +512,7 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: Cover image is 4.5rem in width and height, container padding is px-2', async () => {
+  it('Requirement 1: Cover image is 5rem in width and height, container padding is p-2 and min-h is 6rem', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -523,15 +523,15 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     })
 
     const images = screen.getAllByTestId('song-image')
-    expect(images[0]).toHaveClass('w-[4.5rem]')
-    expect(images[0]).toHaveClass('h-[4.5rem]')
+    expect(images[0]).toHaveClass('w-[5rem]')
+    expect(images[0]).toHaveClass('h-[5rem]')
 
     const rows = screen.getAllByTestId('virtual-row')
-    expect(rows[0]).toHaveClass('px-2')
-    expect(rows[0]).toHaveClass('min-h-[5.5rem]')
+    expect(rows[0]).toHaveClass('p-2')
+    expect(rows[0]).toHaveClass('min-h-[6rem]')
   })
 
-  it('Requirement 2: Container is justify-between on sm, img and span in first div, maps sheets to 2.5rem buttons with type="button", text-sm, difficulty color and level text', async () => {
+  it('Requirement 2: Container is justify-between on sm, img and span in first div, maps sheets to responsive buttons with type="button", difficulty color and level text', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -554,16 +554,25 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
 
     const sheetContainers = screen.getAllByTestId('song-sheets-container')
     expect(sheetContainers[0]).toHaveClass('gap-2')
+    expect(sheetContainers[0]).toHaveClass('justify-center')
+    expect(sheetContainers[0]).toHaveClass('sm:justify-end')
     const stdButtons = sheetContainers[0].querySelectorAll('button')
     expect(stdButtons.length).toBe(3)
 
     expect(stdButtons[0]).toHaveAttribute('type', 'button')
-    expect(stdButtons[0]).toHaveClass('w-[2.5rem]')
-    expect(stdButtons[0]).toHaveClass('h-[2.5rem]')
-    expect(stdButtons[0]).toHaveClass('text-sm')
+    expect(stdButtons[0]).toHaveClass('w-[3rem]')
+    expect(stdButtons[0]).toHaveClass('h-[3rem]')
+    expect(stdButtons[0]).toHaveClass('sm:w-[2.25rem]')
+    expect(stdButtons[0]).toHaveClass('sm:h-[2.25rem]')
+    expect(stdButtons[0]).toHaveClass('text-base')
+    expect(stdButtons[0]).toHaveClass('sm:text-sm')
     expect(stdButtons[0]).toHaveTextContent('3')
     expect(stdButtons[0]).toHaveTextContent('(std)')
     expect(stdButtons[0]).toHaveStyle({ backgroundColor: 'rgb(34, 187, 91)' }) // #22bb5b
+
+    const dxStdSpan = stdButtons[0].querySelector('span:nth-child(2)')!
+    expect(dxStdSpan).toHaveClass('text-xs')
+    expect(dxStdSpan).toHaveClass('sm:text-[10px]')
 
     expect(stdButtons[1]).toHaveTextContent('7')
     expect(stdButtons[1]).toHaveStyle({ backgroundColor: 'rgb(251, 156, 45)' }) // #fb9c2d
@@ -572,7 +581,7 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(stdButtons[2]).toHaveStyle({ backgroundColor: 'rgb(158, 69, 226)' }) // #9e45e2
   })
 
-  it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png and height 1rem', async () => {
+  it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png and width 2.5rem', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
 
@@ -591,13 +600,15 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(badges[0]).toHaveClass('absolute')
     expect(badges[0]).toHaveClass('top-0')
     expect(badges[0]).toHaveClass('left-0')
-    expect(badges[0]).toHaveClass('h-[1rem]')
+    expect(badges[0]).toHaveClass('w-[2.5rem]')
+    expect(badges[0]).not.toHaveClass('h-[1rem]')
     expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
 
     expect(badges[1]).toHaveClass('absolute')
     expect(badges[1]).toHaveClass('top-0')
     expect(badges[1]).toHaveClass('left-0')
-    expect(badges[1]).toHaveClass('h-[1rem]')
+    expect(badges[1]).toHaveClass('w-[2.5rem]')
+    expect(badges[1]).not.toHaveClass('h-[1rem]')
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
   })
 
@@ -654,23 +665,24 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(sheetButtons[0]).toHaveTextContent('4')
     expect(sheetButtons[0]).toHaveTextContent('(dx)')
     expect(sheetButtons[0]).toHaveAttribute('type', 'button')
-    expect(sheetButtons[0]).toHaveClass('text-sm')
+    expect(sheetButtons[0]).toHaveClass('text-base')
 
     // Verify std sheets
     expect(sheetButtons[4]).toHaveTextContent('3')
     expect(sheetButtons[4]).toHaveTextContent('(std)')
     expect(sheetButtons[4]).toHaveAttribute('type', 'button')
 
-    // Verify type badges box and both badges side by side
+    // Verify type badges box without gap-0.5 and both badges side by side
     const badgesBox = screen.getByTestId('type-badges-box')
     expect(badgesBox).toBeInTheDocument()
+    expect(badgesBox).not.toHaveClass('gap-0.5')
     const badges = screen.getAllByTestId('sheet-type-badge')
     expect(badges.length).toBe(2)
     expect(badges[0]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
     expect(badges[1]).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-std.png')
   })
 
-  it('renders dual std and dx sheets in 2 rows with gap-1 and upper row dx / lower row std', async () => {
+  it('renders dual std and dx sheets in 2 rows with gap-2 and upper row dx / lower row std', async () => {
     const dualData = {
       updateTime: '2026-08-21T01:13:03.602Z',
       difficulties: [{ difficulty: 'basic', name: 'BASIC', color: '#22bb5b' }],
@@ -698,8 +710,9 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
 
     const container = screen.getByTestId('song-sheets-container')
     expect(container).toHaveClass('flex-col')
-    expect(container).toHaveClass('gap-1')
-    expect(container).toHaveClass('justify-start')
+    expect(container).toHaveClass('gap-2')
+    expect(container).toHaveClass('justify-center')
+    expect(container).toHaveClass('sm:justify-end')
 
     const rows = container.children
     expect(rows.length).toBe(2)
