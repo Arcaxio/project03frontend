@@ -331,6 +331,24 @@ function App() {
   const types = extractItems(maimaiData?.types, 'type')
   const versions = extractItems(maimaiData?.versions, 'version')
 
+  const newVersionNames = versions.length >= 2 ? versions.slice(-2) : ['CiRCLE', 'CiRCLE PLUS']
+  const newVersionLower = newVersionNames.map((v) => v.toLowerCase())
+
+  let total = 0
+  let newTotal = 0
+  let oldTotal = 0
+
+  for (const chart of maimaiB50Charts) {
+    const rating = Number(chart?.rating) || 0
+    total += rating
+    const chartVer = chart?.version ? String(chart.version).toLowerCase() : ''
+    if (chartVer && newVersionLower.includes(chartVer)) {
+      newTotal += rating
+    } else {
+      oldTotal += rating
+    }
+  }
+
   const songs = maimaiData?.songs || []
   const filteredSongs = songs.filter((song) => {
     if (title) {
@@ -613,6 +631,21 @@ function App() {
                   )
                 })}
               </div>
+            </div>
+          </div>
+
+          <div
+            className="SCORES h-[3.5rem] w-full max-w-4xl mx-auto flex justify-between items-center p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+            data-testid="scores-container"
+          >
+            <div>
+              <span>Total: {total}</span>
+            </div>
+            <div>
+              <span>Old: {oldTotal}</span>
+            </div>
+            <div>
+              <span>New: {newTotal}</span>
             </div>
           </div>
 

@@ -258,6 +258,96 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 })
 
+describe('SCORES Component Requirements', () => {
+  const mockScoresData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    versions: ['maimai', 'GreeN', 'CiRCLE', 'CiRCLE PLUS'],
+    songs: [],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockScoresData)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('renders SCORES div between RESULTS and GRID with required classNames and inner spans', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scores-container')).toBeInTheDocument()
+    })
+
+    const scores = screen.getByTestId('scores-container')
+    expect(scores).toHaveClass('SCORES')
+    expect(scores).toHaveClass('h-[3.5rem]')
+    expect(scores).toHaveClass('w-full')
+    expect(scores).toHaveClass('flex')
+    expect(scores).toHaveClass('justify-between')
+    expect(scores).toHaveClass('items-center')
+    expect(scores).toHaveClass('p-2')
+    expect(scores).toHaveClass('border')
+    expect(scores).toHaveClass('border-gray-200')
+    expect(scores).toHaveClass('dark:border-gray-800')
+    expect(scores).toHaveClass('rounded-lg')
+    expect(scores).toHaveClass('bg-gray-50')
+    expect(scores).toHaveClass('dark:bg-gray-800/50')
+
+    const results = screen.getByTestId('results-container')
+    expect(results.nextElementSibling).toBe(scores)
+
+    const grid = screen.getByTestId('display-container')
+    expect(scores.nextElementSibling).toBe(grid)
+
+    const innerDivs = scores.querySelectorAll('div')
+    expect(innerDivs.length).toBe(3)
+    expect(innerDivs[0].querySelector('span')).toHaveTextContent('Total: 0')
+    expect(innerDivs[1].querySelector('span')).toHaveTextContent('Old: 0')
+    expect(innerDivs[2].querySelector('span')).toHaveTextContent('New: 0')
+  })
+
+  it('calculates Total, Old, and New score totals correctly based on chart versions', async () => {
+    const sampleCharts = [
+      {
+        rating: 300,
+        version: 'maimai',
+      },
+      {
+        rating: 200,
+        version: 'GreeN',
+      },
+      {
+        rating: 150,
+        version: 'CiRCLE',
+      },
+      {
+        rating: 250,
+        version: 'CiRCLE PLUS',
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scores-container')).toBeInTheDocument()
+    })
+
+    const scores = screen.getByTestId('scores-container')
+    const innerDivs = scores.querySelectorAll('div')
+
+    // Total: 300 + 200 + 150 + 250 = 900
+    expect(innerDivs[0].querySelector('span')).toHaveTextContent('Total: 900')
+    // Old: maimai (300) + GreeN (200) = 500
+    expect(innerDivs[1].querySelector('span')).toHaveTextContent('Old: 500')
+    // New: CiRCLE (150) + CiRCLE PLUS (250) = 400
+    expect(innerDivs[2].querySelector('span')).toHaveTextContent('New: 400')
+  })
+})
+
 describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
   const sampleCharts = [
     {
