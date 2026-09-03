@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import App, { ENDPOINT_URL, COUNTDOWN_KEY, TWENTY_FOUR_HOURS_MS } from './App'
+import App, { ENDPOINT_URL, COUNTDOWN_KEY, TWENTY_FOUR_HOURS_MS, ratingFactor } from './App'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbModule from './utils/db'
 
@@ -366,7 +366,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
         target: 99.5,
         type: 'dx',
         difficulty: 'expert',
-        rating: 0,
+        rating: 258,
       },
     ])
   })
@@ -451,7 +451,6 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(coverImg).toHaveStyle({ width: '3.5rem', height: '3.5rem' })
 
     const rightDiv = screen.getByTestId('b50-right-div')
-    expect(rightDiv).toHaveTextContent('13.5100.50')
     expect(rightDiv.children[0]).toHaveTextContent('13.5')
     expect(rightDiv.children[1]).toHaveTextContent('100.5')
     const ratingSpan = rightDiv.querySelector('span')
@@ -930,6 +929,146 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(rows.length).toBe(2)
     expect(rows[0]).toHaveTextContent('(dx)')
     expect(rows[1]).toHaveTextContent('(std)')
+  })
+})
+
+describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, and Target validation', () => {
+  const mockRatingData = {
+    updateTime: '2026-08-21T01:13:03.602Z',
+    difficulties: [{ difficulty: 'expert', name: 'EXPERT', color: '#f64861' }],
+    songs: [
+      {
+        songId: 'song_rating_01',
+        title: 'Rating Test Song',
+        imageName: 'cover_rating.png',
+        sheets: [
+          { type: 'dx', difficulty: 'expert', level: '13', internalLevelValue: 13.4 },
+        ],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockRatingData)
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('exports ratingFactor with 14 threshold items', () => {
+    expect(Array.isArray(ratingFactor)).toBe(true)
+    expect(ratingFactor.length).toBe(14)
+    expect(ratingFactor[0]).toEqual({ minAchv: 105.0, factor: 0.224, title: 'SSS+' })
+    expect(ratingFactor[4]).toEqual({ minAchv: 98.0, factor: 0.203, title: 'S+' })
+  })
+
+  it('calculates rating correctly in handleConfirm (e.g. 98.3421 * 0.203 * 13.4 = 267)', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('target-textfield')).toBeInTheDocument()
+    })
+
+    const targetInput = screen.getByTestId('target-textfield').querySelector('input')!
+    fireEvent.change(targetInput, { target: { value: '98.3421' } })
+
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    const storedChartsStr = localStorage.getItem('maimaiB50Charts')
+    expect(storedChartsStr).not.toBeNull()
+    const storedCharts = JSON.parse(storedChartsStr!)
+    expect(storedCharts[0].rating).toBe(267)
+  })
+
+  it('has hover:scale-[1.125] and transition-transform class on sheet-button and b50-chart-item', async () => {
+    const sampleChart = [
+      {
+        songId: 'song_01',
+        imageName: 'cover_1.png',
+        internalLevelValue: 12.3,
+        target: 99.5,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 258,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleChart))
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    expect(sheetBtn).toHaveClass('hover:scale-[1.125]')
+    expect(sheetBtn).toHaveClass('transition-transform')
+
+    const chartItem = screen.getByTestId('b50-chart-item')
+    expect(chartItem).toHaveClass('hover:scale-[1.125]')
+    expect(chartItem).toHaveClass('transition-transform')
+  })
+
+  it('validates target-textfield to only allow numbers 0-101.0000 with max 4 decimals', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('target-textfield')).toBeInTheDocument()
+    })
+
+    const targetInput = screen.getByTestId('target-textfield').querySelector('input')!
+
+    // Valid values
+    fireEvent.change(targetInput, { target: { value: '100.1234' } })
+    expect(targetInput).toHaveValue('100.1234')
+
+    fireEvent.change(targetInput, { target: { value: '101' } })
+    expect(targetInput).toHaveValue('101')
+
+    fireEvent.change(targetInput, { target: { value: '0.0001' } })
+    expect(targetInput).toHaveValue('0.0001')
+
+    // Invalid values should be rejected (keep previous valid value '0.0001')
+    fireEvent.change(targetInput, { target: { value: '101.0001' } })
+    expect(targetInput).toHaveValue('0.0001')
+
+    fireEvent.change(targetInput, { target: { value: '102' } })
+    expect(targetInput).toHaveValue('0.0001')
+
+    fireEvent.change(targetInput, { target: { value: '-1' } })
+    expect(targetInput).toHaveValue('0.0001')
+
+    fireEvent.change(targetInput, { target: { value: '98.12345' } })
+    expect(targetInput).toHaveValue('0.0001')
+
+    fireEvent.change(targetInput, { target: { value: 'abc' } })
+    expect(targetInput).toHaveValue('0.0001')
   })
 })
 

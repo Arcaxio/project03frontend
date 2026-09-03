@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
-import ImportExportIcon from '@mui/icons-material/ImportExport'
+import MenuIcon from '@mui/icons-material/Menu'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import Popover from '@mui/material/Popover'
@@ -15,6 +15,23 @@ import { getMaimaiData, saveMaimaiData } from './utils/db'
 export const ENDPOINT_URL = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json'
 export const COUNTDOWN_KEY = 'maimaiCountdown'
 export const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
+
+export const ratingFactor = [
+  { minAchv: 105.0, factor: 0.224, title: 'SSS+' },
+  { minAchv: 100.0, factor: 0.216, title: 'SSS' },
+  { minAchv: 99.5, factor: 0.211, title: 'SS+' },
+  { minAchv: 99.0, factor: 0.208, title: 'SS' },
+  { minAchv: 98.0, factor: 0.203, title: 'S+' },
+  { minAchv: 97.0, factor: 0.2, title: 'S+' },
+  { minAchv: 94.0, factor: 0.168, title: 'AAA' },
+  { minAchv: 90.0, factor: 0.152, title: 'AA' },
+  { minAchv: 80.0, factor: 0.136, title: 'A' },
+  { minAchv: 75.0, factor: 0.12, title: 'BBB' },
+  { minAchv: 70.0, factor: 0.112, title: 'BB' },
+  { minAchv: 60.0, factor: 0.096, title: 'B' },
+  { minAchv: 50.0, factor: 0.08, title: 'C' },
+  { minAchv: 0.0, factor: 0.016, title: 'D' },
+]
 
 export function getInitialDarkMode(): boolean {
   const saved = localStorage.getItem('darkMode')
@@ -181,6 +198,12 @@ function App() {
   const handleConfirm = () => {
     if (maimaiB50Charts.length >= 50) return
 
+    const targetNum = typeof targetScore === 'number' ? targetScore : parseFloat(targetScore) || 0
+    const internalLevel = Number(selectedSheet?.internalLevelValue) || 0
+    const matchedFactorObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
+    const factor = matchedFactorObj ? matchedFactorObj.factor : 0
+    const calculatedRating = Math.floor(targetNum * factor * internalLevel)
+
     const newChart = {
       songId: selectedSong?.songId,
       imageName: selectedSong?.imageName,
@@ -188,7 +211,7 @@ function App() {
       target: targetScore,
       type: selectedSheet?.type,
       difficulty: selectedSheet?.difficulty,
-      rating: 0,
+      rating: calculatedRating,
     }
 
     const updated = [...maimaiB50Charts, newChart]
@@ -319,7 +342,7 @@ function App() {
           </div>
           <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
             <IconButton aria-label="import export" data-testid="import-export-button" color="inherit">
-              <ImportExportIcon data-testid="import-export-icon" />
+              <MenuIcon data-testid="import-export-icon" />
             </IconButton>
           </div>
         </header>
@@ -429,7 +452,7 @@ function App() {
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.125] transition-transform"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
                         onClick={(e) => handleSheetClick(e, song, sheet)}
@@ -519,7 +542,7 @@ function App() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[10rem] text-white"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.125] transition-transform"
                   style={{ backgroundColor: color, borderColor: color }}
                   data-testid="b50-chart-item"
                 >
@@ -596,7 +619,23 @@ function App() {
                 label="Target"
                 size="small"
                 value={targetScore}
-                onChange={(e) => setTargetScore(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const val = e.target.value
+                  if (val === '') {
+                    setTargetScore('')
+                    return
+                  }
+                  if (/^\d*(\.\d{0,4})?$/.test(val)) {
+                    if (val === '.') {
+                      setTargetScore(val)
+                      return
+                    }
+                    const num = parseFloat(val)
+                    if (!isNaN(num) && num >= 0 && num <= 101) {
+                      setTargetScore(val)
+                    }
+                  }
+                }}
                 data-testid="target-textfield"
               />
               <Button
