@@ -237,7 +237,7 @@ function App() {
         const parsed = JSON.parse(content)
 
         if (Array.isArray(parsed)) {
-          const requiredKeys = ['difficulty', 'imageName', 'internalLevelValue', 'rating', 'songId', 'target', 'type']
+          const requiredKeys = ['difficulty', 'imageName', 'internalLevelValue', 'rating', 'songId', 'target', 'type', 'version', 'checked']
           const isValid = parsed.every(
             (item) =>
               item &&
@@ -288,6 +288,8 @@ function App() {
       type: selectedSheet?.type,
       difficulty: selectedSheet?.difficulty,
       rating: calculatedRating,
+      version: selectedSong?.version,
+      checked: false,
     }
 
     const updated = [...maimaiB50Charts, newChart]
@@ -533,7 +535,7 @@ function App() {
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.125] transition-transform"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.0625] transition-transform"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
                         onClick={(e) => handleSheetClick(e, song, sheet)}
@@ -623,12 +625,12 @@ function App() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.125] transition-transform"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.0625] transition-transform"
                   style={{ backgroundColor: color, borderColor: color }}
                   data-testid="b50-chart-item"
                 >
                 <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
-                  <span className="truncate">{item?.songId}</span>
+                  <span className="truncate font-bold">{item?.songId}</span>
                   {item?.type && (
                     <img
                       src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
@@ -652,7 +654,16 @@ function App() {
                   </div>
                   <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
                     <div>{item?.internalLevelValue}</div>
-                    <div>{item?.target}</div>
+                    <div>
+                      {(() => {
+                        const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
+                        const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
+                        const titleStr = matchedObj ? matchedObj.title : ''
+                        return item?.target !== undefined && item?.target !== null && item?.target !== ''
+                          ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
+                          : ''
+                      })()}
+                    </div>
                     <span className="text-xl font-bold">{item?.rating}</span>
                   </div>
                 </div>
