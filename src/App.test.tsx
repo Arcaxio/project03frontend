@@ -373,6 +373,8 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
         songId: 'imported_song',
         target: 100.5,
         type: 'std',
+        version: 'maimai',
+        checked: false,
       },
     ]
 
@@ -407,6 +409,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
         songId: 'imported_song',
         target: 100.5,
         type: 'std',
+        version: 'maimai',
       },
     ]
 
@@ -531,6 +534,8 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
         type: 'dx',
         difficulty: 'expert',
         rating: 258,
+        version: undefined,
+        checked: false,
       },
     ])
   })
@@ -602,6 +607,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(topDiv).not.toHaveClass('mb-1')
     const topSpan = topDiv.querySelector('span')
     expect(topSpan).toHaveClass('truncate')
+    expect(topSpan).toHaveClass('font-bold')
 
     const typeImg = screen.getByTestId('b50-type-badge')
     expect(typeImg).toHaveClass('h-3')
@@ -616,7 +622,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
 
     const rightDiv = screen.getByTestId('b50-right-div')
     expect(rightDiv.children[0]).toHaveTextContent('13.5')
-    expect(rightDiv.children[1]).toHaveTextContent('100.5')
+    expect(rightDiv.children[1]).toHaveTextContent('100.5 - SSS+')
     const ratingSpan = rightDiv.querySelector('span')
     expect(ratingSpan).toHaveClass('text-xl')
     expect(ratingSpan).toHaveTextContent('0')
@@ -1157,7 +1163,7 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
     expect(storedCharts[0].rating).toBe(267)
   })
 
-  it('has hover:scale-[1.125] and transition-transform class on sheet-button and b50-chart-item', async () => {
+  it('has hover:scale-[1.0625] and transition-transform class on sheet-button and b50-chart-item', async () => {
     const sampleChart = [
       {
         songId: 'song_01',
@@ -1181,11 +1187,11 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
     })
 
     const sheetBtn = screen.getByTestId('sheet-button')
-    expect(sheetBtn).toHaveClass('hover:scale-[1.125]')
+    expect(sheetBtn).toHaveClass('hover:scale-[1.0625]')
     expect(sheetBtn).toHaveClass('transition-transform')
 
     const chartItem = screen.getByTestId('b50-chart-item')
-    expect(chartItem).toHaveClass('hover:scale-[1.125]')
+    expect(chartItem).toHaveClass('hover:scale-[1.0625]')
     expect(chartItem).toHaveClass('transition-transform')
   })
 
