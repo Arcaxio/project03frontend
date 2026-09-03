@@ -258,6 +258,170 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 })
 
+describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
+  const sampleCharts = [
+    {
+      difficulty: 'expert',
+      imageName: 'sample.png',
+      internalLevelValue: 13.0,
+      rating: 260,
+      songId: 'song_test_1',
+      target: 100.0,
+      type: 'dx',
+    },
+  ]
+
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue({ updateTime: '1', songs: [] })
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('Requirement 1: MenuIcon opens MUI Drawer containing 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('drawer')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Import')).toBeInTheDocument()
+    expect(screen.getByText('Export')).toBeInTheDocument()
+    expect(screen.getByText('Save Image')).toBeInTheDocument()
+    expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
+  })
+
+  it('Requirement 2: "Clear B50 Data" opens modal with exact message and clears maimaiB50Charts in localStorage on confirm', async () => {
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Clear B50 Data'))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Once this action is done, it cannot be undone. Please export your data if you wish to keep it'
+        )
+      ).toBeInTheDocument()
+    })
+
+    const confirmBtn = screen.getByTestId('modal-confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    expect(localStorage.getItem('maimaiB50Charts')).toBeNull()
+    expect(screen.queryByTestId('b50-chart-item')).not.toBeInTheDocument()
+  })
+
+  it('Requirement 3: "Export" triggers download of JSON file containing maimaiB50Charts from localStorage', async () => {
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    const createObjectURLSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
+    const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Export')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Export'))
+
+    expect(createObjectURLSpy).toHaveBeenCalled()
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:test')
+  })
+
+  it('Requirement 4: "Import" prompts file upload, validates keys (difficulty, imageName, internalLevelValue, rating, songId, target, type), and replaces maimaiB50Charts if valid', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-file-input')).toBeInTheDocument()
+    })
+
+    const fileInput = screen.getByTestId('import-file-input') as HTMLInputElement
+
+    const validData = [
+      {
+        difficulty: 'master',
+        imageName: 'new_cover.png',
+        internalLevelValue: 14.2,
+        rating: 300,
+        songId: 'imported_song',
+        target: 100.5,
+        type: 'std',
+      },
+    ]
+
+    const validFile = new File([JSON.stringify(validData)], 'data.json', { type: 'application/json' })
+
+    fireEvent.change(fileInput, { target: { files: [validFile] } })
+
+    await waitFor(() => {
+      const stored = localStorage.getItem('maimaiB50Charts')
+      expect(stored).not.toBeNull()
+      expect(JSON.parse(stored!)).toEqual(validData)
+    })
+  })
+
+  it('Requirement 4: "Import" rejects file if objects do not contain all 7 required keys', async () => {
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-file-input')).toBeInTheDocument()
+    })
+
+    const fileInput = screen.getByTestId('import-file-input') as HTMLInputElement
+
+    // Missing 'rating' key
+    const invalidData = [
+      {
+        difficulty: 'master',
+        imageName: 'new_cover.png',
+        internalLevelValue: 14.2,
+        songId: 'imported_song',
+        target: 100.5,
+        type: 'std',
+      },
+    ]
+
+    const invalidFile = new File([JSON.stringify(invalidData)], 'data.json', { type: 'application/json' })
+
+    fireEvent.change(fileInput, { target: { files: [invalidFile] } })
+
+    await waitFor(() => {
+      // localStorage should remain unchanged (sampleCharts)
+      const stored = localStorage.getItem('maimaiB50Charts')
+      expect(JSON.parse(stored!)).toEqual(sampleCharts)
+    })
+  })
+})
+
 describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Requirements', () => {
   const mockB50Data = {
     updateTime: '2026-08-21T01:13:03.602Z',
@@ -960,7 +1124,7 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
   it('exports ratingFactor with 14 threshold items', () => {
     expect(Array.isArray(ratingFactor)).toBe(true)
     expect(ratingFactor.length).toBe(14)
-    expect(ratingFactor[0]).toEqual({ minAchv: 105.0, factor: 0.224, title: 'SSS+' })
+    expect(ratingFactor[0]).toEqual({ minAchv: 100.5, factor: 0.224, title: 'SSS+' })
     expect(ratingFactor[4]).toEqual({ minAchv: 98.0, factor: 0.203, title: 'S+' })
   })
 
