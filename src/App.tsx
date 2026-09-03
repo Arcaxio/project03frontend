@@ -17,7 +17,7 @@ export const COUNTDOWN_KEY = 'maimaiCountdown'
 export const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 
 export const ratingFactor = [
-  { minAchv: 105.0, factor: 0.224, title: 'SSS+' },
+  { minAchv: 100.5, factor: 0.224, title: 'SSS+' },
   { minAchv: 100.0, factor: 0.216, title: 'SSS' },
   { minAchv: 99.5, factor: 0.211, title: 'SS+' },
   { minAchv: 99.0, factor: 0.208, title: 'SS' },
@@ -452,7 +452,7 @@ function App() {
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.125] transition-transform"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.0625] transition-transform"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
                         onClick={(e) => handleSheetClick(e, song, sheet)}
@@ -542,7 +542,7 @@ function App() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.125] transition-transform"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.0625] transition-transform"
                   style={{ backgroundColor: color, borderColor: color }}
                   data-testid="b50-chart-item"
                 >
