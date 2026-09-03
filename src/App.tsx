@@ -739,7 +739,7 @@ function App() {
             data-testid="drawer"
           >
             <List>
-              {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text, index) => (
+              {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(text)}>
                     <ListItemIcon>
