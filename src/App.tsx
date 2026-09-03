@@ -3,10 +3,21 @@ import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import MenuIcon from '@mui/icons-material/Menu'
+import ListIcon from '@mui/icons-material/List'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import Popover from '@mui/material/Popover'
 import Button from '@mui/material/Button'
+import Drawer from '@mui/material/Drawer'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogActions from '@mui/material/DialogActions'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -75,6 +86,9 @@ function App() {
   const [selectedSong, setSelectedSong] = useState<any>(null)
   const [selectedSheet, setSelectedSheet] = useState<any>(null)
   const [targetScore, setTargetScore] = useState<number | string>('')
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+  const [clearModalOpen, setClearModalOpen] = useState<boolean>(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('maimaiB50Charts')
@@ -180,6 +194,68 @@ function App() {
 
   const toggleDarkMode = () => {
     setDarkMode((prev) => !prev)
+  }
+
+  const handleMenuItemClick = (text: string) => {
+    setDrawerOpen(false)
+    if (text === 'Clear B50 Data') {
+      setClearModalOpen(true)
+    } else if (text === 'Export') {
+      handleExportData()
+    } else if (text === 'Import') {
+      fileInputRef.current?.click()
+    }
+  }
+
+  const handleConfirmClear = () => {
+    localStorage.removeItem('maimaiB50Charts')
+    setMaimaiB50Charts([])
+    setClearModalOpen(false)
+  }
+
+  const handleExportData = () => {
+    const savedData = localStorage.getItem('maimaiB50Charts') || JSON.stringify(maimaiB50Charts)
+    const blob = new Blob([savedData], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'maimaiB50Charts.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string
+        const parsed = JSON.parse(content)
+
+        if (Array.isArray(parsed)) {
+          const requiredKeys = ['difficulty', 'imageName', 'internalLevelValue', 'rating', 'songId', 'target', 'type']
+          const isValid = parsed.every(
+            (item) =>
+              item &&
+              typeof item === 'object' &&
+              requiredKeys.every((key) => key in item)
+          )
+
+          if (isValid) {
+            localStorage.setItem('maimaiB50Charts', JSON.stringify(parsed))
+            setMaimaiB50Charts(parsed)
+          }
+        }
+      } catch {
+        // Invalid JSON
+      }
+    }
+    reader.readAsText(file)
+    event.target.value = ''
   }
 
   const handleSheetClick = (event: React.MouseEvent<HTMLButtonElement>, song: any, sheet: any) => {
@@ -341,7 +417,12 @@ function App() {
             Header Center
           </div>
           <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
-            <IconButton aria-label="import export" data-testid="import-export-button" color="inherit">
+            <IconButton
+              onClick={() => setDrawerOpen(true)}
+              aria-label="import export"
+              data-testid="import-export-button"
+              color="inherit"
+            >
               <MenuIcon data-testid="import-export-icon" />
             </IconButton>
           </div>
@@ -452,7 +533,7 @@ function App() {
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.0625] transition-transform"
+                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.125] transition-transform"
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
                         onClick={(e) => handleSheetClick(e, song, sheet)}
@@ -542,7 +623,7 @@ function App() {
               return (
                 <div
                   key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.0625] transition-transform"
+                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.125] transition-transform"
                   style={{ backgroundColor: color, borderColor: color }}
                   data-testid="b50-chart-item"
                 >
@@ -650,6 +731,55 @@ function App() {
               </Button>
             </div>
           </Popover>
+
+          <Drawer
+            anchor="right"
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            data-testid="drawer"
+          >
+            <List>
+              {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text, index) => (
+                <ListItem key={text} disablePadding>
+                  <ListItemButton onClick={() => handleMenuItemClick(text)}>
+                    <ListItemIcon>
+                      <ListIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={text} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Drawer>
+
+          <Dialog
+            open={clearModalOpen}
+            onClose={() => setClearModalOpen(false)}
+            data-testid="clear-b50-modal"
+          >
+            <DialogContent>
+              <DialogContentText>
+                Once this action is done, it cannot be undone. Please export your data if you wish to keep it
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setClearModalOpen(false)} color="inherit" data-testid="modal-cancel-btn">
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmClear} color="error" autoFocus data-testid="modal-confirm-btn">
+                Confirm
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <input
+            type="file"
+            accept=".json,application/json"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileImport}
+            data-testid="import-file-input"
+          />
         </main>
       </div>
     </ThemeProvider>
