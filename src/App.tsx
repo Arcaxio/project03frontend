@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import html2canvas from 'html2canvas'
+import domtoimage from 'dom-to-image'
 import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import MenuIcon from '@mui/icons-material/Menu'
 import ListIcon from '@mui/icons-material/List'
+import DeleteIcon from '@mui/icons-material/Delete'
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
+import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import Popover from '@mui/material/Popover'
@@ -47,6 +50,112 @@ export const ratingFactor = [
   { minAchv: 50.0, factor: 0.08, title: 'C' },
   { minAchv: 0.0, factor: 0.016, title: 'D' },
 ]
+
+interface B50ChartItemProps {
+  item: any
+  color?: string
+  isFocused: boolean
+  onFocus: () => void
+  onDelete: (item: any) => void
+  onToggleCheck: (item: any) => void
+}
+
+function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck }: B50ChartItemProps) {
+  const isChecked = Boolean(item?.checked)
+
+  return (
+    <div
+      onClick={onFocus}
+      className="group relative flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform overflow-hidden cursor-pointer"
+      style={{
+        backgroundColor: color,
+        borderColor: color,
+        filter: isChecked ? 'brightness(0.5)' : undefined,
+      }}
+      data-testid="b50-chart-item"
+    >
+      <div
+        className={`w-full h-full flex flex-col justify-between transition-all ${
+          isFocused ? 'brightness-50 blur-[1px]' : 'group-hover:brightness-50 group-hover:blur-[1px]'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
+          <span className="truncate font-bold">{item?.songId}</span>
+          {item?.internalLevelValue !== undefined && item?.internalLevelValue !== null && item?.internalLevelValue !== '' && (
+            <span className="shrink-0">| {item.internalLevelValue}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2" data-testid="b50-bottom-div">
+          <div className="shrink-0 relative">
+            {item?.type && (
+              <img
+                src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
+                alt={item.type}
+                className="absolute top-0 left-0 h-3"
+                data-testid="b50-type-badge"
+              />
+            )}
+            {item?.imageName && (
+              <img
+                src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
+                alt={item?.songId || ''}
+                className="w-[4rem] h-[4rem] object-cover rounded"
+                style={{ width: '4rem', height: '4rem' }}
+                data-testid="b50-chart-img"
+              />
+            )}
+          </div>
+          <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
+            <div className="text-xs">{item?.target}</div>
+            <div className="text-xs">
+              {(() => {
+                const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
+                const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
+                const titleStr = matchedObj ? matchedObj.title : ''
+                return item?.target !== undefined && item?.target !== null && item?.target !== ''
+                  ? titleStr
+                  : ''
+              })()}
+            </div>
+            <span className="text-xl font-bold">{item?.rating}</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`absolute inset-0 flex justify-center items-center gap-6 pointer-events-auto transition-opacity ${
+          isFocused ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+        data-testid="b50-chart-overlay"
+      >
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(item)
+          }}
+          aria-label="delete chart"
+          data-testid="b50-delete-btn"
+          sx={{ color: 'red' }}
+        >
+          <DeleteIcon />
+        </IconButton>
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleCheck(item)
+          }}
+          aria-label="toggle check chart"
+          data-testid="b50-check-btn"
+          sx={{ color: 'white' }}
+        >
+          {isChecked ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+        </IconButton>
+      </div>
+    </div>
+  )
+}
 
 export function getInitialDarkMode(): boolean {
   const saved = localStorage.getItem('darkMode')
@@ -104,6 +213,20 @@ function App() {
       return []
     }
   })
+  const [focusedChartKey, setFocusedChartKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-testid="b50-chart-item"]')) {
+        setFocusedChartKey(null)
+      }
+    }
+    window.addEventListener('click', handleOutsideClick)
+    return () => {
+      window.removeEventListener('click', handleOutsideClick)
+    }
+  }, [])
 
   const parentRef = useRef<HTMLDivElement>(null)
 
@@ -206,26 +329,12 @@ function App() {
   const handleSaveImage = async () => {
     if (!gridRef.current) return
     try {
-      const margin = 20
-      const canvas = await html2canvas(gridRef.current, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: darkMode ? '#111827' : '#ffffff',
+      const dataUrl = await domtoimage.toJpeg(gridRef.current, {
+        bgcolor: darkMode ? '#111827' : '#ffffff',
+        quality: 0.95,
       })
-
-      const outputCanvas = document.createElement('canvas')
-      outputCanvas.width = canvas.width + margin * 2
-      outputCanvas.height = canvas.height + margin * 2
-      const ctx = outputCanvas.getContext('2d')
-      if (ctx) {
-        ctx.fillStyle = darkMode ? '#111827' : '#ffffff'
-        ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height)
-        ctx.drawImage(canvas, margin, margin)
-      }
-
-      const imgData = outputCanvas.toDataURL('image/jpeg', 0.95)
       const a = document.createElement('a')
-      a.href = imgData
+      a.href = dataUrl
       a.download = 'maimai-b50.jpg'
       document.body.appendChild(a)
       a.click()
@@ -252,6 +361,38 @@ function App() {
     localStorage.removeItem('maimaiB50Charts')
     setMaimaiB50Charts([])
     setClearModalOpen(false)
+  }
+
+  const handleDeleteChartItem = (itemToDelete: any) => {
+    setMaimaiB50Charts((prev) => {
+      const updated = prev.filter(
+        (chart) =>
+          !(
+            chart.songId === itemToDelete.songId &&
+            String(chart.difficulty).toLowerCase() === String(itemToDelete.difficulty).toLowerCase() &&
+            String(chart.target) === String(itemToDelete.target)
+          )
+      )
+      localStorage.setItem('maimaiB50Charts', JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  const handleToggleCheckChartItem = (itemToToggle: any) => {
+    setMaimaiB50Charts((prev) => {
+      const updated = prev.map((chart) => {
+        if (
+          chart.songId === itemToToggle.songId &&
+          String(chart.difficulty).toLowerCase() === String(itemToToggle.difficulty).toLowerCase() &&
+          String(chart.target) === String(itemToToggle.target)
+        ) {
+          return { ...chart, checked: !chart.checked }
+        }
+        return chart
+      })
+      localStorage.setItem('maimaiB50Charts', JSON.stringify(updated))
+      return updated
+    })
   }
 
   const handleExportData = () => {
@@ -783,55 +924,18 @@ function App() {
                 })
                 .map((item: any, index: number) => {
                   const color = getDifficultyColor(item?.difficulty)
+                  const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
+                  const isFocused = focusedChartKey === itemKey
                   return (
-                    <div
+                    <B50ChartItem
                       key={index}
-                      className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform"
-                      style={{ backgroundColor: color, borderColor: color }}
-                      data-testid="b50-chart-item"
-                    >
-                      <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
-                        <span className="truncate font-bold">{item?.songId}</span>
-                        {item?.internalLevelValue !== undefined && item?.internalLevelValue !== null && item?.internalLevelValue !== '' && (
-                          <span className="shrink-0">| {item.internalLevelValue}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2" data-testid="b50-bottom-div">
-                        <div className="shrink-0 relative">
-                          {item?.type && (
-                            <img
-                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
-                              alt={item.type}
-                              className="absolute top-0 left-0 h-3"
-                              data-testid="b50-type-badge"
-                            />
-                          )}
-                          {item?.imageName && (
-                            <img
-                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
-                              alt={item?.songId || ''}
-                              className="w-[4rem] h-[4rem] object-cover rounded"
-                              style={{ width: '4rem', height: '4rem' }}
-                              data-testid="b50-chart-img"
-                            />
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
-                          <div className="text-xs">{item?.target}</div>
-                          <div className="text-xs">
-                            {(() => {
-                              const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
-                              const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
-                              const titleStr = matchedObj ? matchedObj.title : ''
-                              return item?.target !== undefined && item?.target !== null && item?.target !== ''
-                                ? titleStr
-                                : ''
-                            })()}
-                          </div>
-                          <span className="text-xl font-bold">{item?.rating}</span>
-                        </div>
-                      </div>
-                    </div>
+                      item={item}
+                      color={color}
+                      isFocused={isFocused}
+                      onFocus={() => setFocusedChartKey(itemKey)}
+                      onDelete={handleDeleteChartItem}
+                      onToggleCheck={handleToggleCheckChartItem}
+                    />
                   )
                 })}
             </div>
@@ -847,55 +951,18 @@ function App() {
                 })
                 .map((item: any, index: number) => {
                   const color = getDifficultyColor(item?.difficulty)
+                  const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
+                  const isFocused = focusedChartKey === itemKey
                   return (
-                    <div
+                    <B50ChartItem
                       key={index}
-                      className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform"
-                      style={{ backgroundColor: color, borderColor: color }}
-                      data-testid="b50-chart-item"
-                    >
-                      <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
-                        <span className="truncate font-bold">{item?.songId}</span>
-                        {item?.internalLevelValue !== undefined && item?.internalLevelValue !== null && item?.internalLevelValue !== '' && (
-                          <span className="shrink-0">| {item.internalLevelValue}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2" data-testid="b50-bottom-div">
-                        <div className="shrink-0 relative">
-                          {item?.type && (
-                            <img
-                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
-                              alt={item.type}
-                              className="absolute top-0 left-0 h-3"
-                              data-testid="b50-type-badge"
-                            />
-                          )}
-                          {item?.imageName && (
-                            <img
-                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
-                              alt={item?.songId || ''}
-                              className="w-[4rem] h-[4rem] object-cover rounded"
-                              style={{ width: '4rem', height: '4rem' }}
-                              data-testid="b50-chart-img"
-                            />
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
-                          <div className="text-xs">{item?.target}</div>
-                          <div className="text-xs">
-                            {(() => {
-                              const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
-                              const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
-                              const titleStr = matchedObj ? matchedObj.title : ''
-                              return item?.target !== undefined && item?.target !== null && item?.target !== ''
-                                ? titleStr
-                                : ''
-                            })()}
-                          </div>
-                          <span className="text-xl font-bold">{item?.rating}</span>
-                        </div>
-                      </div>
-                    </div>
+                      item={item}
+                      color={color}
+                      isFocused={isFocused}
+                      onFocus={() => setFocusedChartKey(itemKey)}
+                      onDelete={handleDeleteChartItem}
+                      onToggleCheck={handleToggleCheckChartItem}
+                    />
                   )
                 })}
             </div>
@@ -979,6 +1046,7 @@ function App() {
             data-testid="drawer"
           >
             <span className="text-2xl p-4 font-bold">Options</span>
+            <Divider />
             <List style={{ width: 240 }}>
               {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
                 <ListItem key={text} disablePadding>
