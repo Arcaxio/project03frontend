@@ -650,59 +650,129 @@ function App() {
           </div>
 
           <div
-            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex flex-wrap content-start justify-center gap-2"
+            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center gap-2"
             data-testid="display-container"
           >
-            {maimaiB50Charts.map((item: any, index: number) => {
-              const color = getDifficultyColor(item?.difficulty)
-              return (
-                <div
-                  key={index}
-                  className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6rem] w-[12rem] text-white hover:scale-[1.0625] transition-transform"
-                  style={{ backgroundColor: color, borderColor: color }}
-                  data-testid="b50-chart-item"
-                >
-                <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
-                  <span className="truncate font-bold">{item?.songId}</span>
-                  {item?.type && (
-                    <img
-                      src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
-                      alt={item.type}
-                      className="h-3"
-                      data-testid="b50-type-badge"
-                    />
-                  )}
-                </div>
-                <div className="flex items-center gap-2" data-testid="b50-bottom-div">
-                  <div className="shrink-0">
-                    {item?.imageName && (
-                      <img
-                        src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
-                        alt={item?.songId || ''}
-                        className="w-[3.5rem] h-[3.5rem] object-cover rounded"
-                        style={{ width: '3.5rem', height: '3.5rem' }}
-                        data-testid="b50-chart-img"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
-                    <div>{item?.internalLevelValue}</div>
-                    <div>
-                      {(() => {
-                        const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
-                        const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
-                        const titleStr = matchedObj ? matchedObj.title : ''
-                        return item?.target !== undefined && item?.target !== null && item?.target !== ''
-                          ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
-                          : ''
-                      })()}
+            <div
+              className="GRID-OLD basis-[30%] flex flex-wrap content-start justify-center gap-2"
+              data-testid="grid-old"
+            >
+              {maimaiB50Charts
+                .filter((item: any) => {
+                  const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                  return !(chartVer && newVersionLower.includes(chartVer))
+                })
+                .map((item: any, index: number) => {
+                  const color = getDifficultyColor(item?.difficulty)
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform"
+                      style={{ backgroundColor: color, borderColor: color }}
+                      data-testid="b50-chart-item"
+                    >
+                      <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
+                        <span className="truncate font-bold">{item?.songId}</span>
+                      </div>
+                      <div className="flex items-center gap-2" data-testid="b50-bottom-div">
+                        <div className="shrink-0 relative">
+                          {item?.type && (
+                            <img
+                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
+                              alt={item.type}
+                              className="absolute top-0 left-0 h-3"
+                              data-testid="b50-type-badge"
+                            />
+                          )}
+                          {item?.imageName && (
+                            <img
+                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
+                              alt={item?.songId || ''}
+                              className="w-[4rem] h-[4rem] object-cover rounded"
+                              style={{ width: '4rem', height: '4rem' }}
+                              data-testid="b50-chart-img"
+                            />
+                          )}
+                        </div>
+                        <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
+                          <div className="text-xs">{item?.internalLevelValue}</div>
+                          <div className="text-xs">
+                            {(() => {
+                              const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
+                              const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
+                              const titleStr = matchedObj ? matchedObj.title : ''
+                              return item?.target !== undefined && item?.target !== null && item?.target !== ''
+                                ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
+                                : ''
+                            })()}
+                          </div>
+                          <span className="text-xl font-bold">{item?.rating}</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xl font-bold">{item?.rating}</span>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+                  )
+                })}
+            </div>
+            <div
+              className="GRID-NEW basis-[70%] flex flex-wrap content-start justify-center gap-2"
+              data-testid="grid-new"
+            >
+              {maimaiB50Charts
+                .filter((item: any) => {
+                  const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                  return Boolean(chartVer && newVersionLower.includes(chartVer))
+                })
+                .map((item: any, index: number) => {
+                  const color = getDifficultyColor(item?.difficulty)
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform"
+                      style={{ backgroundColor: color, borderColor: color }}
+                      data-testid="b50-chart-item"
+                    >
+                      <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
+                        <span className="truncate font-bold">{item?.songId}</span>
+                      </div>
+                      <div className="flex items-center gap-2" data-testid="b50-bottom-div">
+                        <div className="shrink-0 relative">
+                          {item?.type && (
+                            <img
+                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
+                              alt={item.type}
+                              className="absolute top-0 left-0 h-3"
+                              data-testid="b50-type-badge"
+                            />
+                          )}
+                          {item?.imageName && (
+                            <img
+                              src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
+                              alt={item?.songId || ''}
+                              className="w-[4rem] h-[4rem] object-cover rounded"
+                              style={{ width: '4rem', height: '4rem' }}
+                              data-testid="b50-chart-img"
+                            />
+                          )}
+                        </div>
+                        <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
+                          <div className="text-xs">{item?.internalLevelValue}</div>
+                          <div className="text-xs">
+                            {(() => {
+                              const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
+                              const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
+                              const titleStr = matchedObj ? matchedObj.title : ''
+                              return item?.target !== undefined && item?.target !== null && item?.target !== ''
+                                ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
+                                : ''
+                            })()}
+                          </div>
+                          <span className="text-xl font-bold">{item?.rating}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
           </div>
 
           <Popover
