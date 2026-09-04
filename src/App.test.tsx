@@ -371,7 +371,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, width 240 List, and 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
+  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, Divider, width 240 List, and 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -387,6 +387,10 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     const optionsText = screen.getByText('Options')
     expect(optionsText).toBeInTheDocument()
     expect(optionsText).toHaveClass('text-2xl')
+
+    const drawer = screen.getByTestId('drawer')
+    const divider = drawer.querySelector('.MuiDivider-root')
+    expect(divider).toBeInTheDocument()
 
     const listElement = screen.getByRole('list')
     expect(listElement).toHaveStyle({ width: '240px' })
@@ -820,6 +824,73 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     const ratingSpan = rightDiv.querySelector('span')
     expect(ratingSpan).toHaveClass('text-xl')
     expect(ratingSpan).toHaveTextContent('0')
+  })
+
+  it('b50-chart-item interaction: overlay div, delete action, check action, and brightness(0.5)', async () => {
+    const sampleCharts = [
+      {
+        songId: 'song_test_item_1',
+        imageName: 'cover1.png',
+        internalLevelValue: 12.0,
+        target: 100.0,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 250,
+        checked: false,
+      },
+      {
+        songId: 'song_test_item_2',
+        imageName: 'cover2.png',
+        internalLevelValue: 13.0,
+        target: 99.5,
+        type: 'std',
+        difficulty: 'master',
+        rating: 270,
+        checked: true,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const chartItems = screen.getAllByTestId('b50-chart-item')
+    expect(chartItems.length).toBe(2)
+
+    // Unchecked item should not have filter: brightness(0.5) permanently
+    expect(chartItems[0]).not.toHaveStyle('filter: brightness(0.5)')
+    // Checked item should have filter: brightness(0.5) permanently
+    expect(chartItems[1]).toHaveStyle('filter: brightness(0.5)')
+
+    // Check overlay structure inside b50-chart-item
+    const overlays = screen.getAllByTestId('b50-chart-overlay')
+    expect(overlays[0]).toHaveClass('flex')
+    expect(overlays[0]).toHaveClass('justify-center')
+    expect(overlays[0]).toHaveClass('items-center')
+    expect(overlays[0]).toHaveClass('gap-6')
+
+    // Test tapping check button on first item
+    const checkBtns = screen.getAllByTestId('b50-check-btn')
+    fireEvent.click(checkBtns[0])
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('maimaiB50Charts')!)
+      const targetChart = stored.find((c: any) => c.songId === 'song_test_item_1')
+      expect(targetChart.checked).toBe(true)
+    })
+
+    // Test delete button on second item
+    const deleteBtns = screen.getAllByTestId('b50-delete-btn')
+    fireEvent.click(deleteBtns[1])
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('maimaiB50Charts')!)
+      expect(stored.length).toBe(1)
+      expect(stored[0].songId).toBe('song_test_item_1')
+    })
   })
 })
 
