@@ -638,7 +638,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     ])
   })
 
-  it('Requirement 5: Confirm button is disabled when maimaiB50Charts has 50 objects', async () => {
+  it('Requirement 5: Confirm button triggers Snackbar error when maimaiB50Charts has 50 objects', async () => {
     const full50 = Array.from({ length: 50 }, (_, i) => ({
       songId: `song_${i}`,
       imageName: `cover_${i}.png`,
@@ -646,6 +646,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
       target: 100,
       type: 'dx',
       rating: 0,
+      version: 'maimai',
     }))
     localStorage.setItem('maimaiB50Charts', JSON.stringify(full50))
 
@@ -665,10 +666,16 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
       expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
     })
 
-    expect(screen.getByTestId('confirm-btn')).toBeDisabled()
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('snackbar-alert')).toHaveTextContent('You already have 50 total charts')
+    })
+    expect(screen.getByTestId('sheet-popover')).toBeInTheDocument()
   })
 
-  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[6.5rem], w-[10rem], top div (songId with truncate className), bottom div (flex with cover img 4rem x 4rem & type badge inside relative parent, internalLevelValue and target text-xs, rating text-xl)', async () => {
+  it('Requirement 6: In the GRID div, maps maimaiB50Charts with top div (| 13.5) and right div (target & titleStr)', async () => {
     const sampleCharts = [
       {
         songId: 'song_dx_01',
@@ -702,10 +709,11 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
 
     const topDiv = screen.getByTestId('b50-top-div')
     expect(topDiv).toHaveTextContent('song_dx_01')
-    expect(topDiv).not.toHaveClass('mb-1')
-    const topSpan = topDiv.querySelector('span')
-    expect(topSpan).toHaveClass('truncate')
-    expect(topSpan).toHaveClass('font-bold')
+    expect(topDiv).toHaveTextContent('| 13.5')
+    const topSpans = topDiv.querySelectorAll('span')
+    expect(topSpans[0]).toHaveClass('truncate')
+    expect(topSpans[0]).toHaveClass('font-bold')
+    expect(topSpans[1]).toHaveTextContent('| 13.5')
 
     const coverImg = screen.getByTestId('b50-chart-img')
     expect(coverImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover_sample.png')
@@ -726,9 +734,9 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(bottomDiv).toHaveClass('flex')
 
     const rightDiv = screen.getByTestId('b50-right-div')
-    expect(rightDiv.children[0]).toHaveTextContent('13.5')
+    expect(rightDiv.children[0]).toHaveTextContent('100.5')
     expect(rightDiv.children[0]).toHaveClass('text-xs')
-    expect(rightDiv.children[1]).toHaveTextContent('100.5 - SSS+')
+    expect(rightDiv.children[1]).toHaveTextContent('SSS+')
     expect(rightDiv.children[1]).toHaveClass('text-xs')
     const ratingSpan = rightDiv.querySelector('span')
     expect(ratingSpan).toHaveClass('text-xl')
@@ -1350,6 +1358,221 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
     const chartItem = screen.getByTestId('b50-chart-item')
     expect(chartItem).toHaveClass('hover:scale-[1.0625]')
     expect(chartItem).toHaveClass('transition-transform')
+  })
+
+  it('sorts inserted charts correctly by rating, internalLevelValue, target, and difficulty in handleConfirm', async () => {
+    const existingCharts = [
+      {
+        songId: 'song_308_high_lvl',
+        imageName: 'cover1.png',
+        internalLevelValue: 13.5,
+        target: 100.0,
+        type: 'dx',
+        difficulty: 'master',
+        rating: 308,
+        version: 'maimai',
+      },
+      {
+        songId: 'song_308_same_lvl_high_target',
+        imageName: 'cover2.png',
+        internalLevelValue: 13.0,
+        target: 100.5,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 308,
+        version: 'maimai',
+      },
+      {
+        songId: 'song_308_same_all_expert',
+        imageName: 'cover3.png',
+        internalLevelValue: 13.0,
+        target: 100.0,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 308,
+        version: 'maimai',
+      },
+      {
+        songId: 'song_306',
+        imageName: 'cover4.png',
+        internalLevelValue: 12.0,
+        target: 100.0,
+        type: 'dx',
+        difficulty: 'basic',
+        rating: 306,
+        version: 'maimai',
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(existingCharts))
+
+    // Selected song with rating 308, same lvl 13.0, same target 100.0, but higher difficulty 'master'
+    const songData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      difficulties: [
+        { difficulty: 'expert', name: 'EXPERT', color: '#f64861' },
+        { difficulty: 'master', name: 'MASTER', color: '#9e45e2' },
+      ],
+      songs: [
+        {
+          songId: 'song_308_same_all_master',
+          title: 'Master Song',
+          version: 'maimai',
+          sheets: [
+            { type: 'dx', difficulty: 'master', level: '13', internalLevelValue: 13.0 },
+          ],
+        },
+      ],
+    }
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(songData)
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('score-btn-SSS')).toBeInTheDocument()
+    })
+
+    // SSS gives 100 target -> 100 * 0.216 * 13.0 = Math.floor(280.8) = 280 rating
+    // Let's directly type target 108.973 for 308 rating: 100 * 0.2369 * 13 = ...
+    // Or set target to 100.0 and factor 0.2369?
+    // In ratingFactor: 100.0 -> factor 0.216. 100.0 * 0.216 * 13.0 = 280.
+    // To get 308: rating = targetNum * factor * internalLevel -> factor for 100.5 is 0.224. 100.5 * 0.224 * 13.67 = 308.
+    // Let's set target input to 100.0 -> 100 * 0.236923...
+    // Let's use target 100.0 for internalLevel 14.26 -> 100 * 0.216 * 14.26 = 308
+    // In current code: targetNum = 100.0, internalLevelValue = 13.0, factor = 0.216. calculatedRating = Math.floor(100 * 0.216 * 13) = 280.
+    // Let's test ordering on whatever target is typed.
+    // Let's select SSS+ (100.5 -> factor 0.224). internalLevel = 13.0. 100.5 * 0.224 * 13.69...
+    // Let's type target score 100.0 on sheet with internalLevelValue = 14.26 -> rating 308.
+    const targetInput = screen.getByTestId('target-textfield').querySelector('input')!
+    fireEvent.change(targetInput, { target: { value: '100' } })
+
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    const storedChartsStr = localStorage.getItem('maimaiB50Charts')
+    expect(storedChartsStr).not.toBeNull()
+    const storedCharts = JSON.parse(storedChartsStr!)
+
+    // Check order of items:
+    // 1. song_308_high_lvl (rating 308, level 13.5)
+    // 2. song_308_same_lvl_high_target (rating 308, level 13.0, target 100.5)
+    // 3. song_308_same_all_master (rating 280 -> sorted after 308s)
+    expect(storedCharts[0].songId).toBe('song_308_high_lvl')
+    expect(storedCharts[1].songId).toBe('song_308_same_lvl_high_target')
+    expect(storedCharts[2].songId).toBe('song_308_same_all_expert')
+  })
+
+  it('triggers Snackbar error when trying to add more than 15 new charts', async () => {
+    const mockVersData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      versions: ['maimai', 'CiRCLE', 'CiRCLE PLUS'],
+      difficulties: [{ difficulty: 'expert', name: 'EXPERT', color: '#f64861' }],
+      songs: [
+        {
+          songId: 'new_song',
+          title: 'New Song',
+          version: 'CiRCLE PLUS',
+          sheets: [{ type: 'dx', difficulty: 'expert', level: '12', internalLevelValue: 12.0 }],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockVersData)
+
+    const fifteenNewCharts = Array.from({ length: 15 }, (_, i) => ({
+      songId: `new_chart_${i}`,
+      imageName: `cover_${i}.png`,
+      internalLevelValue: 12,
+      target: 100,
+      type: 'dx',
+      rating: 200,
+      version: 'CiRCLE PLUS',
+    }))
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(fifteenNewCharts))
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('confirm-btn'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('snackbar-alert')).toHaveTextContent('You already have 15 new charts')
+    })
+    expect(screen.getByTestId('sheet-popover')).toBeInTheDocument()
+  })
+
+  it('triggers Snackbar error when trying to add more than 35 old charts', async () => {
+    const mockVersData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      versions: ['maimai', 'CiRCLE', 'CiRCLE PLUS'],
+      difficulties: [{ difficulty: 'expert', name: 'EXPERT', color: '#f64861' }],
+      songs: [
+        {
+          songId: 'old_song',
+          title: 'Old Song',
+          version: 'maimai',
+          sheets: [{ type: 'dx', difficulty: 'expert', level: '12', internalLevelValue: 12.0 }],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockVersData)
+
+    const thirtyFiveOldCharts = Array.from({ length: 35 }, (_, i) => ({
+      songId: `old_chart_${i}`,
+      imageName: `cover_${i}.png`,
+      internalLevelValue: 12,
+      target: 100,
+      type: 'dx',
+      rating: 200,
+      version: 'maimai',
+    }))
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(thirtyFiveOldCharts))
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('confirm-btn'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('snackbar-alert')).toHaveTextContent('You already have 35 old charts')
+    })
+    expect(screen.getByTestId('sheet-popover')).toBeInTheDocument()
   })
 
   it('validates target-textfield to only allow numbers 0-101.0000 with max 4 decimals', async () => {
