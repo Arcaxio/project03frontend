@@ -19,6 +19,8 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogActions from '@mui/material/DialogActions'
 import Divider from '@mui/material/Divider'
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -89,6 +91,8 @@ function App() {
   const [targetScore, setTargetScore] = useState<number | string>('')
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
   const [clearModalOpen, setClearModalOpen] = useState<boolean>(false)
+  const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
+  const [snackbarMessage, setSnackbarMessage] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
     try {
@@ -272,8 +276,73 @@ function App() {
     setSelectedSheet(null)
   }
 
+  const getDifficultyRank = (diff?: string): number => {
+    if (!diff) return 0
+    const lower = diff.toLowerCase()
+    if (lower === 'remaster' || lower === 're:master') return 5
+    if (lower === 'master') return 4
+    if (lower === 'expert') return 3
+    if (lower === 'advanced') return 2
+    if (lower === 'basic') return 1
+    return 0
+  }
+
+  const compareCharts = (a: any, b: any) => {
+    const ratingA = Number(a?.rating) || 0
+    const ratingB = Number(b?.rating) || 0
+    if (ratingA !== ratingB) {
+      return ratingB - ratingA
+    }
+
+    const levelA = Number(a?.internalLevelValue) || 0
+    const levelB = Number(b?.internalLevelValue) || 0
+    if (levelA !== levelB) {
+      return levelB - levelA
+    }
+
+    const targetA = Number(a?.target) || 0
+    const targetB = Number(b?.target) || 0
+    if (targetA !== targetB) {
+      return targetB - targetA
+    }
+
+    const diffA = getDifficultyRank(a?.difficulty)
+    const diffB = getDifficultyRank(b?.difficulty)
+    return diffB - diffA
+  }
+
   const handleConfirm = () => {
-    if (maimaiB50Charts.length >= 50) return
+    if (maimaiB50Charts.length >= 50) {
+      setSnackbarMessage('You already have 50 total charts')
+      setSnackbarOpen(true)
+      return
+    }
+
+    const songVersion = selectedSong?.version ? String(selectedSong.version).toLowerCase() : ''
+    const isNewChart = Boolean(songVersion && newVersionLower.includes(songVersion))
+
+    let currentNewCount = 0
+    let currentOldCount = 0
+    for (const chart of maimaiB50Charts) {
+      const chartVer = chart?.version ? String(chart.version).toLowerCase() : ''
+      if (chartVer && newVersionLower.includes(chartVer)) {
+        currentNewCount++
+      } else {
+        currentOldCount++
+      }
+    }
+
+    if (isNewChart && currentNewCount >= 15) {
+      setSnackbarMessage('You already have 15 new charts')
+      setSnackbarOpen(true)
+      return
+    }
+
+    if (!isNewChart && currentOldCount >= 35) {
+      setSnackbarMessage('You already have 35 old charts')
+      setSnackbarOpen(true)
+      return
+    }
 
     const targetNum = typeof targetScore === 'number' ? targetScore : parseFloat(targetScore) || 0
     const internalLevel = Number(selectedSheet?.internalLevelValue) || 0
@@ -293,7 +362,7 @@ function App() {
       checked: false,
     }
 
-    const updated = [...maimaiB50Charts, newChart]
+    const updated = [...maimaiB50Charts, newChart].sort(compareCharts)
     setMaimaiB50Charts(updated)
     localStorage.setItem('maimaiB50Charts', JSON.stringify(updated))
     handleClosePopover()
@@ -674,6 +743,9 @@ function App() {
                     >
                       <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
                         <span className="truncate font-bold">{item?.songId}</span>
+                        {item?.internalLevelValue !== undefined && item?.internalLevelValue !== null && item?.internalLevelValue !== '' && (
+                          <span className="shrink-0">| {item.internalLevelValue}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2" data-testid="b50-bottom-div">
                         <div className="shrink-0 relative">
@@ -696,14 +768,14 @@ function App() {
                           )}
                         </div>
                         <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
-                          <div className="text-xs">{item?.internalLevelValue}</div>
+                          <div className="text-xs">{item?.target}</div>
                           <div className="text-xs">
                             {(() => {
                               const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
                               const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
                               const titleStr = matchedObj ? matchedObj.title : ''
                               return item?.target !== undefined && item?.target !== null && item?.target !== ''
-                                ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
+                                ? titleStr
                                 : ''
                             })()}
                           </div>
@@ -735,6 +807,9 @@ function App() {
                     >
                       <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
                         <span className="truncate font-bold">{item?.songId}</span>
+                        {item?.internalLevelValue !== undefined && item?.internalLevelValue !== null && item?.internalLevelValue !== '' && (
+                          <span className="shrink-0">| {item.internalLevelValue}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2" data-testid="b50-bottom-div">
                         <div className="shrink-0 relative">
@@ -757,14 +832,14 @@ function App() {
                           )}
                         </div>
                         <div className="flex flex-col justify-center text-sm" data-testid="b50-right-div">
-                          <div className="text-xs">{item?.internalLevelValue}</div>
+                          <div className="text-xs">{item?.target}</div>
                           <div className="text-xs">
                             {(() => {
                               const targetNum = typeof item?.target === 'number' ? item.target : parseFloat(item?.target) || 0
                               const matchedObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
                               const titleStr = matchedObj ? matchedObj.title : ''
                               return item?.target !== undefined && item?.target !== null && item?.target !== ''
-                                ? `${item.target}${titleStr ? ` - ${titleStr}` : ''}`
+                                ? titleStr
                                 : ''
                             })()}
                           </div>
@@ -838,7 +913,6 @@ function App() {
               <Button
                 variant="contained"
                 color="primary"
-                disabled={maimaiB50Charts.length >= 50}
                 onClick={handleConfirm}
                 style={{ textTransform: 'none' }}
                 data-testid="confirm-btn"
@@ -897,6 +971,24 @@ function App() {
             onChange={handleFileImport}
             data-testid="import-file-input"
           />
+
+          <Snackbar
+            open={snackbarOpen}
+            autoHideDuration={4000}
+            onClose={() => setSnackbarOpen(false)}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            data-testid="snackbar"
+          >
+            <Alert
+              onClose={() => setSnackbarOpen(false)}
+              severity="error"
+              variant="filled"
+              sx={{ width: '100%' }}
+              data-testid="snackbar-alert"
+            >
+              {snackbarMessage}
+            </Alert>
+          </Snackbar>
         </main>
       </div>
     </ThemeProvider>
