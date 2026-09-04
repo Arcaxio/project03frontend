@@ -660,7 +660,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(screen.getByTestId('confirm-btn')).toBeDisabled()
   })
 
-  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[6rem], w-[12rem], top div (songId with truncate className, type img with h-3, no mb-1), bottom div (flex with cover img 3.5rem x 3.5rem, internalLevelValue above target, rating text-xl)', async () => {
+  it('Requirement 6: In the GRID div, maps maimaiB50Charts with h-[6.5rem], w-[10rem], top div (songId with truncate className), bottom div (flex with cover img 4rem x 4rem & type badge inside relative parent, internalLevelValue and target text-xs, rating text-xl)', async () => {
     const sampleCharts = [
       {
         songId: 'song_dx_01',
@@ -684,8 +684,8 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(chartItems.length).toBe(1)
 
     const item = chartItems[0]
-    expect(item).toHaveClass('h-[6rem]')
-    expect(item).toHaveClass('w-[12rem]')
+    expect(item).toHaveClass('h-[6.5rem]')
+    expect(item).toHaveClass('w-[10rem]')
     expect(item).toHaveClass('justify-between')
     expect(item).toHaveClass('flex')
     expect(item).toHaveClass('flex-col')
@@ -699,20 +699,29 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(topSpan).toHaveClass('truncate')
     expect(topSpan).toHaveClass('font-bold')
 
+    const coverImg = screen.getByTestId('b50-chart-img')
+    expect(coverImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover_sample.png')
+    expect(coverImg).toHaveStyle({ width: '4rem', height: '4rem' })
+
+    const coverParent = coverImg.parentElement!
+    expect(coverParent).toHaveClass('relative')
+
     const typeImg = screen.getByTestId('b50-type-badge')
+    expect(coverParent).toContainElement(typeImg)
+    expect(typeImg).toHaveClass('absolute')
+    expect(typeImg).toHaveClass('top-0')
+    expect(typeImg).toHaveClass('left-0')
     expect(typeImg).toHaveClass('h-3')
     expect(typeImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-dx.png')
 
     const bottomDiv = screen.getByTestId('b50-bottom-div')
     expect(bottomDiv).toHaveClass('flex')
 
-    const coverImg = screen.getByTestId('b50-chart-img')
-    expect(coverImg).toHaveAttribute('src', 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/cover_sample.png')
-    expect(coverImg).toHaveStyle({ width: '3.5rem', height: '3.5rem' })
-
     const rightDiv = screen.getByTestId('b50-right-div')
     expect(rightDiv.children[0]).toHaveTextContent('13.5')
+    expect(rightDiv.children[0]).toHaveClass('text-xs')
     expect(rightDiv.children[1]).toHaveTextContent('100.5 - SSS+')
+    expect(rightDiv.children[1]).toHaveClass('text-xs')
     const ratingSpan = rightDiv.querySelector('span')
     expect(ratingSpan).toHaveClass('text-xl')
     expect(ratingSpan).toHaveTextContent('0')
@@ -857,7 +866,38 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
     expect(levelInput).toHaveValue('12+')
   })
 
-  it('Requirement 3: Check classnames FILTERS on dropdowns-container and GRID on display-container', async () => {
+  it('Requirement 3: Check classnames FILTERS on dropdowns-container and GRID on display-container, and splits GRID into GRID-OLD and GRID-NEW child divs', async () => {
+    const mockVersionedData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      versions: ['maimai', 'GreeN', 'CiRCLE', 'CiRCLE PLUS'],
+      songs: [],
+    }
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockVersionedData)
+
+    const sampleCharts = [
+      {
+        songId: 'old_chart_1',
+        imageName: 'cover_old.png',
+        internalLevelValue: 12.0,
+        target: 100.0,
+        type: 'std',
+        difficulty: 'expert',
+        rating: 200,
+        version: 'maimai',
+      },
+      {
+        songId: 'new_chart_1',
+        imageName: 'cover_new.png',
+        internalLevelValue: 13.0,
+        target: 100.5,
+        type: 'dx',
+        difficulty: 'master',
+        rating: 280,
+        version: 'CiRCLE PLUS',
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
     render(<App />)
 
     await waitFor(() => {
@@ -870,6 +910,21 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
 
     expect(dropdownsContainer).toHaveClass('FILTERS')
     expect(displayContainer).toHaveClass('GRID')
+
+    const gridOld = screen.getByTestId('grid-old')
+    const gridNew = screen.getByTestId('grid-new')
+
+    expect(gridOld).toHaveClass('GRID-OLD')
+    expect(gridOld).toHaveClass('basis-[30%]')
+
+    expect(gridNew).toHaveClass('GRID-NEW')
+    expect(gridNew).toHaveClass('basis-[70%]')
+
+    expect(gridOld).toHaveTextContent('old_chart_1')
+    expect(gridOld).not.toHaveTextContent('new_chart_1')
+
+    expect(gridNew).toHaveTextContent('new_chart_1')
+    expect(gridNew).not.toHaveTextContent('old_chart_1')
   })
 
   it('Requirement 4, 5, 6 & 7: Renders RESULTS div between FILTERS and GRID with 16rem height, scrollable, bg-gray-50 dark:bg-gray-800/50, and filters songs by title', async () => {
