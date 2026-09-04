@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import html2canvas from 'html2canvas'
 import IconButton from '@mui/material/IconButton'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
@@ -94,6 +95,7 @@ function App() {
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
   const [snackbarMessage, setSnackbarMessage] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
   const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('maimaiB50Charts')
@@ -201,6 +203,38 @@ function App() {
     setDarkMode((prev) => !prev)
   }
 
+  const handleSaveImage = async () => {
+    if (!gridRef.current) return
+    try {
+      const margin = 20
+      const canvas = await html2canvas(gridRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: darkMode ? '#111827' : '#ffffff',
+      })
+
+      const outputCanvas = document.createElement('canvas')
+      outputCanvas.width = canvas.width + margin * 2
+      outputCanvas.height = canvas.height + margin * 2
+      const ctx = outputCanvas.getContext('2d')
+      if (ctx) {
+        ctx.fillStyle = darkMode ? '#111827' : '#ffffff'
+        ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height)
+        ctx.drawImage(canvas, margin, margin)
+      }
+
+      const imgData = outputCanvas.toDataURL('image/jpeg', 0.95)
+      const a = document.createElement('a')
+      a.href = imgData
+      a.download = 'maimai-b50.jpg'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch {
+      // Capture error handling if necessary
+    }
+  }
+
   const handleMenuItemClick = (text: string) => {
     setDrawerOpen(false)
     if (text === 'Clear B50 Data') {
@@ -209,6 +243,8 @@ function App() {
       handleExportData()
     } else if (text === 'Import') {
       fileInputRef.current?.click()
+    } else if (text === 'Save Image') {
+      handleSaveImage()
     }
   }
 
@@ -312,6 +348,18 @@ function App() {
   }
 
   const handleConfirm = () => {
+    const exists = maimaiB50Charts.some(
+      (chart) =>
+        chart?.songId === selectedSong?.songId &&
+        String(chart?.difficulty).toLowerCase() === String(selectedSheet?.difficulty).toLowerCase()
+    )
+
+    if (exists) {
+      setSnackbarMessage('This chart already exists in your B50')
+      setSnackbarOpen(true)
+      return
+    }
+
     if (maimaiB50Charts.length >= 50) {
       setSnackbarMessage('You already have 50 total charts')
       setSnackbarOpen(true)
@@ -720,7 +768,8 @@ function App() {
           </div>
 
           <div
-            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
+            ref={gridRef}
+            className="w-full max-w-[1700px] mx-auto min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
             data-testid="display-container"
           >
             <div
@@ -914,6 +963,7 @@ function App() {
                 variant="contained"
                 color="primary"
                 onClick={handleConfirm}
+                disabled={targetScore === '' || targetScore === null || targetScore === undefined}
                 style={{ textTransform: 'none' }}
                 data-testid="confirm-btn"
               >

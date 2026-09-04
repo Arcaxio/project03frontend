@@ -638,6 +638,82 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     ])
   })
 
+  it('triggers Snackbar error "This chart already exists in your B50" when a duplicate chart exists', async () => {
+    const existingChart = [
+      {
+        songId: 'song_01',
+        imageName: 'cover_1.png',
+        internalLevelValue: 12.3,
+        target: 99.5,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 258,
+        version: 'maimai',
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(existingChart))
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('score-btn-SSS')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('score-btn-SSS'))
+
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('snackbar-alert')).toHaveTextContent('This chart already exists in your B50')
+    })
+  })
+
+  it('disables confirm-btn when targetScore is empty and enables when filled', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
+    })
+
+    const confirmBtn = screen.getByTestId('confirm-btn') as HTMLButtonElement
+    expect(confirmBtn).toBeDisabled()
+
+    fireEvent.click(screen.getByTestId('score-btn-S'))
+    expect(confirmBtn).not.toBeDisabled()
+  })
+
+  it('has max-w-[1700px] class on GRID display container', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const displayContainer = screen.getByTestId('display-container')
+    expect(displayContainer).toHaveClass('max-w-[1700px]')
+  })
+
   it('Requirement 5: Confirm button triggers Snackbar error when maimaiB50Charts has 50 objects', async () => {
     const full50 = Array.from({ length: 50 }, (_, i) => ({
       songId: `song_${i}`,
@@ -665,6 +741,9 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     await waitFor(() => {
       expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
     })
+
+    const scoreBtn = screen.getByTestId('score-btn-SSS')
+    fireEvent.click(scoreBtn)
 
     const confirmBtn = screen.getByTestId('confirm-btn')
     fireEvent.click(confirmBtn)
@@ -1515,6 +1594,7 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
       expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
     })
 
+    fireEvent.click(screen.getByTestId('score-btn-SSS'))
     fireEvent.click(screen.getByTestId('confirm-btn'))
 
     await waitFor(() => {
@@ -1567,6 +1647,7 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
       expect(screen.getByTestId('confirm-btn')).toBeInTheDocument()
     })
 
+    fireEvent.click(screen.getByTestId('score-btn-SSS'))
     fireEvent.click(screen.getByTestId('confirm-btn'))
 
     await waitFor(() => {
