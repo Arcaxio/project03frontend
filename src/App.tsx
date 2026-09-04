@@ -18,6 +18,7 @@ import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogActions from '@mui/material/DialogActions'
+import Divider from '@mui/material/Divider'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -434,7 +435,7 @@ function App() {
             </IconButton>
           </div>
           <div className="flex items-center justify-center flex-1 text-center font-medium" data-testid="header-center">
-            Header Center
+            Maimai B50 Maker
           </div>
           <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
             <IconButton
@@ -650,11 +651,11 @@ function App() {
           </div>
 
           <div
-            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center gap-2"
+            className="w-full min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
             data-testid="display-container"
           >
             <div
-              className="GRID-OLD basis-[30%] flex flex-wrap content-start justify-center gap-2"
+              className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
               data-testid="grid-old"
             >
               {maimaiB50Charts
@@ -713,8 +714,9 @@ function App() {
                   )
                 })}
             </div>
+            <Divider orientation="vertical" flexItem />
             <div
-              className="GRID-NEW basis-[70%] flex flex-wrap content-start justify-center gap-2"
+              className="GRID-NEW basis-[30%] flex flex-wrap content-start justify-center gap-2"
               data-testid="grid-new"
             >
               {maimaiB50Charts
@@ -852,7 +854,8 @@ function App() {
             onClose={() => setDrawerOpen(false)}
             data-testid="drawer"
           >
-            <List>
+            <span className="text-2xl p-4 font-bold">Options</span>
+            <List style={{ width: 240 }}>
               {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(text)}>

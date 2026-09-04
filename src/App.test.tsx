@@ -25,7 +25,7 @@ describe('App & Header Dark Mode', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('renders static header with height 4rem and 3 distinct sides (left, center, right)', async () => {
+  it('renders static header with height 4rem, "Maimai B50 Maker" in center, and 3 distinct sides (left, center, right)', async () => {
     render(<App />)
     await waitFor(() => {
       expect(screen.getByTestId('header')).toBeInTheDocument()
@@ -39,6 +39,7 @@ describe('App & Header Dark Mode', () => {
 
     expect(left).toBeInTheDocument()
     expect(center).toBeInTheDocument()
+    expect(center).toHaveTextContent('Maimai B50 Maker')
     expect(right).toBeInTheDocument()
   })
 
@@ -370,7 +371,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: MenuIcon opens MUI Drawer containing 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
+  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, width 240 List, and 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -382,6 +383,13 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     await waitFor(() => {
       expect(screen.getByTestId('drawer')).toBeInTheDocument()
     })
+
+    const optionsText = screen.getByText('Options')
+    expect(optionsText).toBeInTheDocument()
+    expect(optionsText).toHaveClass('text-2xl')
+
+    const listElement = screen.getByRole('list')
+    expect(listElement).toHaveStyle({ width: '240px' })
 
     expect(screen.getByText('Import')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
@@ -816,7 +824,7 @@ describe('Dropdowns and Main Layout Requirements', () => {
     expect(displayDiv).toHaveClass('p-2')
     expect(displayDiv).toHaveClass('content-start')
     expect(displayDiv).toHaveClass('justify-center')
-    expect(displayDiv).toHaveClass('gap-2')
+    expect(displayDiv).not.toHaveClass('gap-2')
 
     const mainElement = displayDiv.closest('main')!
     expect(mainElement).toHaveClass('p-5')
@@ -910,15 +918,19 @@ describe('New Requirements: Title & Level inputs, FILTERS, GRID, RESULTS virtual
 
     expect(dropdownsContainer).toHaveClass('FILTERS')
     expect(displayContainer).toHaveClass('GRID')
+    expect(displayContainer).not.toHaveClass('gap-2')
 
     const gridOld = screen.getByTestId('grid-old')
     const gridNew = screen.getByTestId('grid-new')
 
     expect(gridOld).toHaveClass('GRID-OLD')
-    expect(gridOld).toHaveClass('basis-[30%]')
+    expect(gridOld).toHaveClass('basis-[70%]')
 
     expect(gridNew).toHaveClass('GRID-NEW')
-    expect(gridNew).toHaveClass('basis-[70%]')
+    expect(gridNew).toHaveClass('basis-[30%]')
+
+    const divider = displayContainer.querySelector('.MuiDivider-root')
+    expect(divider).toBeInTheDocument()
 
     expect(gridOld).toHaveTextContent('old_chart_1')
     expect(gridOld).not.toHaveTextContent('new_chart_1')
