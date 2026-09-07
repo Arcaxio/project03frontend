@@ -692,8 +692,10 @@ function App() {
               )}
             </IconButton>
           </div>
-          <div className="flex items-center justify-center flex-1 text-center font-medium" data-testid="header-center">
+          <div className="flex items-center justify-center flex-1 text-center" data-testid="header-center">
+            <h1 className="font-medium">
             Maimai B50 Maker
+            </h1>
           </div>
           <div className="flex items-center justify-end flex-1 text-right" data-testid="header-right">
             <IconButton
