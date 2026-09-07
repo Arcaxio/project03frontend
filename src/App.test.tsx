@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import App, { ENDPOINT_URL, COUNTDOWN_KEY, TWENTY_FOUR_HOURS_MS, ratingFactor } from './App'
+import App, { ENDPOINT_URL, COUNTDOWN_KEY, TWENTY_FOUR_HOURS_MS, ratingFactor, isValidLevelInput } from './App'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbModule from './utils/db'
 
@@ -399,6 +399,31 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(screen.getByText('Export')).toBeInTheDocument()
     expect(screen.getByText('Save Image')).toBeInTheDocument()
     expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
+    expect(screen.getByText('Github')).toBeInTheDocument()
+  })
+
+  it('Requirement: Clicking "Github" in Drawer opens "https://github.com/Arcaxio/project03frontend" in a new tab', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Github')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Github'))
+
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      'https://github.com/Arcaxio/project03frontend',
+      '_blank',
+      'noopener,noreferrer'
+    )
   })
 
   it('Requirement 2: "Clear B50 Data" opens modal with exact message and clears maimaiB50Charts in localStorage on confirm', async () => {
@@ -523,6 +548,162 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
       // localStorage should remain unchanged (sampleCharts)
       const stored = localStorage.getItem('maimaiB50Charts')
       expect(JSON.parse(stored!)).toEqual(sampleCharts)
+    })
+  })
+})
+
+describe('Level Input Validation & Filtering', () => {
+  it('validates level input correctly using isValidLevelInput function', () => {
+    // Valid cases
+    expect(isValidLevelInput('')).toBe(true)
+    expect(isValidLevelInput('1')).toBe(true)
+    expect(isValidLevelInput('13')).toBe(true)
+    expect(isValidLevelInput('15')).toBe(true)
+    expect(isValidLevelInput('13+')).toBe(true)
+    expect(isValidLevelInput('15+')).toBe(true)
+    expect(isValidLevelInput('13.')).toBe(true)
+    expect(isValidLevelInput('13.4')).toBe(true)
+    expect(isValidLevelInput('1.0')).toBe(true)
+    expect(isValidLevelInput('15.0')).toBe(true)
+
+    // Invalid cases
+    expect(isValidLevelInput('0')).toBe(false)
+    expect(isValidLevelInput('0.5')).toBe(false)
+    expect(isValidLevelInput('16')).toBe(false)
+    expect(isValidLevelInput('15.1')).toBe(false)
+    expect(isValidLevelInput('13.+')).toBe(false)
+    expect(isValidLevelInput('13.4+')).toBe(false)
+    expect(isValidLevelInput('13.45')).toBe(false)
+    expect(isValidLevelInput('abc')).toBe(false)
+  })
+
+  it('rejects invalid inputs when typing in level TextField', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('level-input')).toBeInTheDocument()
+    })
+
+    const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    // Type 13 -> allowed
+    fireEvent.change(levelInput, { target: { value: '13' } })
+    expect(levelInput).toHaveValue('13')
+
+    // Try typing 13.+ -> rejected, stays 13
+    fireEvent.change(levelInput, { target: { value: '13.+' } })
+    expect(levelInput).toHaveValue('13')
+
+    // Try typing 13.45 -> rejected, stays 13
+    fireEvent.change(levelInput, { target: { value: '13.45' } })
+    expect(levelInput).toHaveValue('13')
+
+    // Type 13. -> allowed
+    fireEvent.change(levelInput, { target: { value: '13.' } })
+    expect(levelInput).toHaveValue('13.')
+
+    // Type 13.4 -> allowed
+    fireEvent.change(levelInput, { target: { value: '13.4' } })
+    expect(levelInput).toHaveValue('13.4')
+
+    // Try typing 13.4+ -> rejected, stays 13.4
+    fireEvent.change(levelInput, { target: { value: '13.4+' } })
+    expect(levelInput).toHaveValue('13.4')
+
+    // Try typing 16 -> rejected, stays 13.4
+    fireEvent.change(levelInput, { target: { value: '16' } })
+    expect(levelInput).toHaveValue('13.4')
+  })
+
+  it('filters charts using internalLevelValue when decimal followed by number is entered (e.g. 13.4)', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    const mockLevelData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      categories: ['POPS & ANIME'],
+      difficulties: ['MASTER', 'EXPERT'],
+      types: ['std', 'dx'],
+      versions: ['PRiSM'],
+      songs: [
+        {
+          title: 'Song A (Internal 13.4)',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '13', internalLevelValue: 13.4 }],
+        },
+        {
+          title: 'Song B (Internal 13.2)',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '13', internalLevelValue: 13.2 }],
+        },
+        {
+          title: 'Song C (Level 13+)',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '13+', internalLevelValue: 13.8 }],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockLevelData)
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('level-input')).toBeInTheDocument()
+    })
+
+    const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    // Typing "13.4" should match Song A (internalLevelValue = 13.4), but not Song B or Song C
+    fireEvent.change(levelInput, { target: { value: '13.4' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Song A (Internal 13.4)')).toBeInTheDocument()
+      expect(screen.queryByText('Song B (Internal 13.2)')).not.toBeInTheDocument()
+      expect(screen.queryByText('Song C (Level 13+)')).not.toBeInTheDocument()
+    })
+  })
+
+  it('filters charts that are 13 or 13+ when "13." is entered', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    const mockLevelData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      categories: ['POPS & ANIME'],
+      difficulties: ['MASTER', 'EXPERT'],
+      types: ['std', 'dx'],
+      versions: ['PRiSM'],
+      songs: [
+        {
+          title: 'Song 13',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '13', internalLevelValue: 13.2 }],
+        },
+        {
+          title: 'Song 13+',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '13+', internalLevelValue: 13.8 }],
+        },
+        {
+          title: 'Song 14',
+          sheets: [{ type: 'dx', difficulty: 'master', level: '14', internalLevelValue: 14.0 }],
+        },
+      ],
+    }
+
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(mockLevelData)
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('level-input')).toBeInTheDocument()
+    })
+
+    const levelInput = screen.getByTestId('level-input').querySelector('input')!
+
+    // Typing "13." should match both Song 13 and Song 13+, but not Song 14
+    fireEvent.change(levelInput, { target: { value: '13.' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Song 13')).toBeInTheDocument()
+      expect(screen.getByText('Song 13+')).toBeInTheDocument()
+      expect(screen.queryByText('Song 14')).not.toBeInTheDocument()
     })
   })
 })
