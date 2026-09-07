@@ -242,6 +242,7 @@ function App() {
     }
   })
   const [focusedChartKey, setFocusedChartKey] = useState<string | null>(null)
+  const [displayMode, setDisplayMode] = useState<string>('grid')
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
@@ -384,6 +385,8 @@ function App() {
       handleSaveImage()
     } else if (text === 'Github') {
       window.open('https://github.com/Arcaxio/project03frontend', '_blank', 'noopener,noreferrer')
+    } else if (text.startsWith('Display:')) {
+      setDisplayMode((prev) => (prev === 'grid' ? 'list' : 'grid'))
     }
   }
 
@@ -955,11 +958,12 @@ function App() {
             </div>
           </div>
 
-          <div
-            ref={gridRef}
-            className="w-full max-w-[1700px] mx-auto min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
-            data-testid="display-container"
-          >
+          <div className="w-full max-w-[1700px] mx-auto">
+            <div
+              ref={gridRef}
+              className="w-full max-w-[1700px] min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
+              data-testid="display-container"
+            >
             <div
               className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
               data-testid="grid-old"
@@ -1014,6 +1018,7 @@ function App() {
                 })}
             </div>
           </div>
+        </div>
 
           <Popover
             open={Boolean(anchorEl)}
@@ -1095,7 +1100,14 @@ function App() {
             <span className="text-2xl p-4 font-bold">Options</span>
             <Divider />
             <List style={{ width: 240 }}>
-              {['Import', 'Export', 'Save Image', 'Clear B50 Data', 'Github'].map((text) => (
+              {[
+                'Import',
+                'Export',
+                'Save Image',
+                'Clear B50 Data',
+                `Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`,
+                'Github',
+              ].map((text) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(text)}>
                     <ListItemIcon>
