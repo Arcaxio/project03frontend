@@ -301,7 +301,7 @@ describe('SCORES Component Requirements', () => {
     expect(results.nextElementSibling).toBe(scores)
 
     const grid = screen.getByTestId('display-container')
-    expect(scores.nextElementSibling).toBe(grid)
+    expect(scores.nextElementSibling).toBe(grid.parentElement)
 
     const innerDivs = scores.querySelectorAll('div')
     expect(innerDivs.length).toBe(3)
@@ -371,7 +371,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, Divider, width 240 List, and 4 list items (Import, Export, Save Image, Clear B50 Data)', async () => {
+  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, Divider, width 240 List, and list items (Import, Export, Save Image, Clear B50 Data, Display: Grid, Github)', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -399,7 +399,44 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(screen.getByText('Export')).toBeInTheDocument()
     expect(screen.getByText('Save Image')).toBeInTheDocument()
     expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
+    expect(screen.getByText('Display: Grid')).toBeInTheDocument()
     expect(screen.getByText('Github')).toBeInTheDocument()
+  })
+
+  it('Requirement: Drawer contains "Display: Grid" above "Github" with ListIcon, and toggles text to "Display: List" when clicked', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Display: Grid')).toBeInTheDocument()
+    })
+
+    const displayItem = screen.getByText('Display: Grid')
+    const githubItem = screen.getByText('Github')
+
+    // Verify ordering: Display item comes before Github item
+    const listItems = screen.getAllByRole('listitem')
+    const displayIndex = listItems.findIndex((li) => li.textContent?.includes('Display:'))
+    const githubIndex = listItems.findIndex((li) => li.textContent?.includes('Github'))
+
+    expect(displayIndex).toBeGreaterThan(-1)
+    expect(githubIndex).toBeGreaterThan(-1)
+    expect(displayIndex).toBe(githubIndex - 1)
+
+    // Click "Display: Grid" to toggle text
+    fireEvent.click(displayItem)
+
+    // Reopen drawer since handleMenuItemClick closes drawer
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Display: List')).toBeInTheDocument()
+    })
   })
 
   it('Requirement: Clicking "Github" in Drawer opens "https://github.com/Arcaxio/project03frontend" in a new tab', async () => {
@@ -888,7 +925,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(confirmBtn).not.toBeDisabled()
   })
 
-  it('has max-w-[1700px] class on GRID display container', async () => {
+  it('has wrapper div with mx-auto around GRID display container, and display-container itself lacks mx-auto', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -897,6 +934,12 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
 
     const displayContainer = screen.getByTestId('display-container')
     expect(displayContainer).toHaveClass('max-w-[1700px]')
+    expect(displayContainer).not.toHaveClass('mx-auto')
+
+    const parentWrapper = displayContainer.parentElement
+    expect(parentWrapper).toHaveClass('mx-auto')
+    expect(parentWrapper).toHaveClass('w-full')
+    expect(parentWrapper).toHaveClass('max-w-[1700px]')
   })
 
   it('Requirement 5: Confirm button triggers Snackbar error when maimaiB50Charts has 50 objects', async () => {
