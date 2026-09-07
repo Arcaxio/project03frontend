@@ -417,7 +417,6 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     })
 
     const displayItem = screen.getByText('Display: Grid')
-    const githubItem = screen.getByText('Github')
 
     // Verify ordering: Display item comes before Github item
     const listItems = screen.getAllByRole('listitem')
