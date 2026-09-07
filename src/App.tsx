@@ -5,6 +5,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import MenuIcon from '@mui/icons-material/Menu'
 import ListIcon from '@mui/icons-material/List'
+import GitHubIcon from '@mui/icons-material/GitHub'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
@@ -33,6 +34,33 @@ import { getMaimaiData, saveMaimaiData } from './utils/db'
 export const ENDPOINT_URL = 'https://dp4p6x0xfi5o9.cloudfront.net/maimai/data.json'
 export const COUNTDOWN_KEY = 'maimaiCountdown'
 export const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
+
+export function isValidLevelInput(val: string): boolean {
+  if (val === '') return true
+  if (val.includes('.') && val.includes('+')) return false
+
+  if (/^[1-9]\d*$/.test(val)) {
+    const num = parseInt(val, 10)
+    return num >= 1 && num <= 15
+  }
+
+  if (/^[1-9]\d*\+$/.test(val)) {
+    const num = parseInt(val.slice(0, -1), 10)
+    return num >= 1 && num <= 15
+  }
+
+  if (/^[1-9]\d*\.$/.test(val)) {
+    const num = parseInt(val.slice(0, -1), 10)
+    return num >= 1 && num <= 15
+  }
+
+  if (/^[1-9]\d*\.\d$/.test(val)) {
+    const num = parseFloat(val)
+    return num >= 1.0 && num <= 15.0
+  }
+
+  return false
+}
 
 export const ratingFactor = [
   { minAchv: 100.5, factor: 0.224, title: 'SSS+' },
@@ -354,6 +382,8 @@ function App() {
       fileInputRef.current?.click()
     } else if (text === 'Save Image') {
       handleSaveImage()
+    } else if (text === 'Github') {
+      window.open('https://github.com/Arcaxio/project03frontend', '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -644,13 +674,23 @@ function App() {
     }
     if (level && level.trim()) {
       const targetLevel = level.trim()
-      const isPlusTarget = targetLevel.endsWith('+')
       const hasMatchingLevel = song?.sheets?.some((sheet: any) => {
-        const sheetLevel = sheet?.level?.toString().trim()
-        if (!sheetLevel) return false
-        if (isPlusTarget) {
+        if (targetLevel.endsWith('.')) {
+          const baseLevel = targetLevel.slice(0, -1)
+          const sheetLevel = sheet?.level?.toString().trim()
+          return sheetLevel === baseLevel || sheetLevel === `${baseLevel}+`
+        } else if (/^\d+\.\d+$/.test(targetLevel)) {
+          const targetNum = parseFloat(targetLevel)
+          const sheetInternalLevel =
+            sheet?.internalLevelValue !== undefined && sheet?.internalLevelValue !== null && sheet?.internalLevelValue !== ''
+              ? Number(sheet.internalLevelValue)
+              : NaN
+          return !isNaN(sheetInternalLevel) && Math.abs(sheetInternalLevel - targetNum) < 0.001
+        } else if (targetLevel.endsWith('+')) {
+          const sheetLevel = sheet?.level?.toString().trim()
           return sheetLevel === targetLevel
         } else {
+          const sheetLevel = sheet?.level?.toString().trim()
           return sheetLevel === targetLevel || sheetLevel === `${targetLevel}+`
         }
       })
@@ -726,7 +766,12 @@ function App() {
               label="Level"
               type="search"
               value={level}
-              onChange={(e) => setLevel(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value
+                if (isValidLevelInput(val)) {
+                  setLevel(val)
+                }
+              }}
               className="w-full sm:w-[calc(50%-0.5rem)] max-w-[400px]"
               data-testid="level-input"
             />
@@ -1050,11 +1095,11 @@ function App() {
             <span className="text-2xl p-4 font-bold">Options</span>
             <Divider />
             <List style={{ width: 240 }}>
-              {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
+              {['Import', 'Export', 'Save Image', 'Clear B50 Data', 'Github'].map((text) => (
                 <ListItem key={text} disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(text)}>
                     <ListItemIcon>
-                      <ListIcon />
+                      {text === 'Github' ? <GitHubIcon /> : <ListIcon />}
                     </ListItemIcon>
                     <ListItemText primary={text} />
                   </ListItemButton>
