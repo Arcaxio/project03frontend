@@ -98,7 +98,7 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
   if (displayMode === 'list') {
     return (
       <div
-        className="flex justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6.5rem] text-white"
+        className="w-full flex justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[5rem] text-white"
         style={{
           backgroundColor: color,
           borderColor: color,
@@ -127,14 +127,12 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
             )}
           </div>
 
-          <div className={`gap-4`}>
-            <span className="truncate font-bold">{item?.songId}</span>
-
-            {item?.internalLevelValue !== undefined &&
+          <div className={`flex flex-col gap-4`}>
+            <span className="font-bold">
+ {item?.internalLevelValue !== undefined &&
               item?.internalLevelValue !== null &&
-              item?.internalLevelValue !== '' && (
-                <span className="shrink-0">| {item.internalLevelValue}</span>
-              )}
+              item?.internalLevelValue !== '' && item.internalLevelValue}
+{item?.songId}</span>
 
             <span className="text-xs">
               {item?.target} |{' '}
@@ -1102,7 +1100,9 @@ function App() {
 
           <div
             className={`GRID-CONTAINER border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 w-full mx-auto ${
-              gridLayout.columns === 10
+              displayMode === 'list'
+                ? 'max-w-[1700px]'
+                : gridLayout.columns === 10
                 ? 'min-w-[1700px] max-w-[1700px]'
                 : gridLayout.columns === 5
                 ? 'min-w-[900px] max-w-[900px]'
@@ -1129,7 +1129,7 @@ function App() {
             <div
               ref={gridRef}
               className={`min-h-[60vh] p-2 GRID flex content-start justify-center ${
-                gridLayout.columns === 10 ? 'flex-row' : 'flex-col'
+                displayMode === 'list' || gridLayout.columns !== 10 ? 'flex-col' : 'flex-row'
               }`}
               style={{
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
@@ -1165,9 +1165,9 @@ function App() {
                   })}
               </div>
               <Divider
-                orientation={gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
-                flexItem={gridLayout.columns === 10}
-                className={gridLayout.columns !== 10 ? 'py-1' : undefined}
+                orientation={displayMode !== 'list' && gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
+                flexItem={displayMode !== 'list' && gridLayout.columns === 10}
+                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'py-1' : undefined}
               />
               <div
                 className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
@@ -1334,7 +1334,10 @@ function App() {
                 </ListItem>
 
                 <ListItem disablePadding>
-                  <ListItemButton onClick={() => handleMenuItemClick(`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`)}>
+                  <ListItemButton
+                    disabled={displayMode === 'list'}
+                    onClick={() => handleMenuItemClick(`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`)}
+                  >
                     <ListItemIcon>
                       <ListIcon />
                     </ListItemIcon>

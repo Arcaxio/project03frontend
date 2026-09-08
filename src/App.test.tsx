@@ -589,6 +589,55 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     })
   })
 
+  it('Requirement: Verify list mode item styling, disabled Grid Layout in Drawer, and GRID container/layout rules when displayMode is list', async () => {
+    localStorage.setItem('maimaiGridDisplay', 'list')
+    localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 10, rows: 5 }))
+
+    const sampleCharts = [
+      {
+        songId: 'list_song_1',
+        imageName: 'sample.png',
+        internalLevelValue: 13.5,
+        target: 100.5,
+        type: 'dx',
+        difficulty: 'master',
+        rating: 300,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('b50-chart-item-list')).toBeInTheDocument()
+    })
+
+    const listItem = screen.getByTestId('b50-chart-item-list')
+    expect(listItem).toHaveClass('w-full')
+    expect(listItem).toHaveClass('h-[5rem]')
+    expect(listItem).not.toHaveClass('h-[6.5rem]')
+
+    const gridContainer = screen.getByTestId('display-container').parentElement!
+    expect(gridContainer).toHaveClass('GRID-CONTAINER')
+    expect(gridContainer).toHaveClass('max-w-[1700px]')
+    expect(gridContainer).not.toHaveClass('min-w-[1700px]')
+    expect(gridContainer).not.toHaveClass('min-w-[900px]')
+    expect(gridContainer).not.toHaveClass('min-w-[420px]')
+
+    const displayContainer = screen.getByTestId('display-container')
+    expect(displayContainer).toHaveClass('flex-col')
+    expect(displayContainer).not.toHaveClass('flex-row')
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
+    })
+
+    const gridLayoutBtn = screen.getByText('Grid Layout: 10x5').closest('button') || screen.getByText('Grid Layout: 10x5').closest('.MuiListItemButton-root')
+    expect(gridLayoutBtn).toHaveClass('Mui-disabled')
+  })
+
   it('Requirement: Clicking "Github" in Drawer opens "https://github.com/Arcaxio/project03frontend" in a new tab', async () => {
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
