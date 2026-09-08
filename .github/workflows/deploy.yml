@@ -10,7 +10,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-   steps:
+    steps:
       - name: Checkout Code
         uses: actions/checkout@v5
 
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install & Build
         run: |
