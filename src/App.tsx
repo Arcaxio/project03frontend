@@ -996,12 +996,12 @@ function App() {
           </div>
 
           <div
-            className={`GRID-CONTAINER w-full max-w-[1700px] mx-auto ${
+            className={`GRID-CONTAINER border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 w-full mx-auto ${
               gridLayout.columns === 10
-                ? 'min-w-[1700px]'
+                ? 'min-w-[1700px] max-w-[1700px]'
                 : gridLayout.columns === 5
-                ? 'min-w-[900px]'
-                : 'min-w-[420px]'
+                ? 'min-w-[900px] max-w-[900px]'
+                : 'min-w-[420px] max-w-[420px]'
             }`}
           >
             <div
@@ -1023,7 +1023,7 @@ function App() {
 
             <div
               ref={gridRef}
-              className={`min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center ${
+              className={`min-h-[60vh] p-2 GRID flex content-start justify-center ${
                 gridLayout.columns === 10 ? 'flex-row' : 'flex-col'
               }`}
               style={{
@@ -1058,7 +1058,11 @@ function App() {
                     )
                   })}
               </div>
-              <Divider orientation="vertical" flexItem />
+              <Divider
+                orientation={gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
+                flexItem={gridLayout.columns === 10}
+                className={gridLayout.columns !== 10 ? 'py-1' : undefined}
+              />
               <div
                 className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
                 data-testid="grid-old"
@@ -1169,7 +1173,7 @@ function App() {
               <span className="text-2xl font-bold mb-2">Options</span>
               <Divider />
 
-              <span className="text-xl font-bold mt-2">Data</span>
+              <span className="text-lg text-gray-500 dark:text-gray-400 mt-2">Data</span>
               <List disablePadding>
                 {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
                   <ListItem key={text} disablePadding>
@@ -1183,7 +1187,7 @@ function App() {
                 ))}
               </List>
 
-              <span className="text-xl font-bold mt-6">Display</span>
+              <span className="text-lg text-gray-500 dark:text-gray-400 mt-6">Display</span>
               <List disablePadding>
                 <ListItem disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(`Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`)}>
