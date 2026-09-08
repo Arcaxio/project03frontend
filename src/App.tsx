@@ -90,10 +90,14 @@ interface B50ChartItemProps {
 
 function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck }: B50ChartItemProps) {
   const isChecked = Boolean(item?.checked)
+  const [isHovered, setIsHovered] = useState(false)
+  const showOverlay = isFocused || isHovered
 
   return (
     <div
       onClick={onFocus}
+      onMouseOver={() => setIsHovered(true)}
+      onMouseOut={() => setIsHovered(false)}
       className="group relative flex flex-col justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 w-[10rem] h-[6.5rem] text-white hover:scale-[1.0625] transition-transform overflow-hidden cursor-pointer"
       style={{
         backgroundColor: color,
@@ -104,7 +108,7 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
     >
       <div
         className={`w-full h-full flex flex-col justify-between transition-all ${
-          isFocused ? 'brightness-50 blur-[1px]' : 'group-hover:brightness-50 group-hover:blur-[1px]'
+          showOverlay ? 'brightness-50 blur-[1px]' : ''
         }`}
       >
         <div className="flex items-center justify-between gap-1 text-xs" data-testid="b50-top-div">
@@ -150,37 +154,43 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
         </div>
       </div>
 
-      <div
-        className={`absolute inset-0 flex justify-center items-center gap-6 pointer-events-auto transition-opacity ${
-          isFocused ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        }`}
-        data-testid="b50-chart-overlay"
-      >
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(item)
-          }}
-          aria-label="delete chart"
-          data-testid="b50-delete-btn"
-          sx={{ color: 'red' }}
+      {showOverlay && (
+        <div
+          className="absolute inset-0 flex justify-center items-center gap-6 pointer-events-auto transition-opacity opacity-100"
+          data-testid="b50-chart-overlay"
         >
-          <DeleteIcon />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleCheck(item)
-          }}
-          aria-label="toggle check chart"
-          data-testid="b50-check-btn"
-          sx={{ color: 'white' }}
-        >
-          {isChecked ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
-        </IconButton>
-      </div>
+          <div className="flex flex-col items-center">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(item)
+              }}
+              aria-label="delete chart"
+              data-testid="b50-delete-btn"
+              sx={{ color: 'white' }}
+            >
+              <DeleteIcon />
+            </IconButton>
+            <span className="text-white text-xs">Delete</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleCheck(item)
+              }}
+              aria-label="toggle check chart"
+              data-testid="b50-check-btn"
+              sx={{ color: 'white' }}
+            >
+              {isChecked ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+            </IconButton>
+            <span className="text-white text-xs">{isChecked ? 'Uncheck' : 'Check'}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -567,10 +577,11 @@ function App() {
     }
 
     const targetNum = typeof targetScore === 'number' ? targetScore : parseFloat(targetScore) || 0
+    const effectiveTarget = Math.min(targetNum, 100.5)
     const internalLevel = Number(selectedSheet?.internalLevelValue) || 0
     const matchedFactorObj = ratingFactor.find((rf) => targetNum >= rf.minAchv)
     const factor = matchedFactorObj ? matchedFactorObj.factor : 0
-    const calculatedRating = Math.floor(targetNum * factor * internalLevel)
+    const calculatedRating = Math.floor(effectiveTarget * factor * internalLevel)
 
     const newChart = {
       songId: selectedSong?.songId,
@@ -857,15 +868,19 @@ function App() {
                   const hasBothTypes = stdSheets.length > 0 && dxSheets.length > 0
 
                   const renderSheetButton = (sheet: any, idx: number, song: any) => {
+                    const isUtage = sheet?.type?.toLowerCase() === 'utage'
                     const color = getDifficultyColor(sheet?.difficulty)
                     return (
                       <button
                         type="button"
                         key={idx}
-                        className="w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight cursor-pointer hover:scale-[1.0625] transition-transform"
+                        disabled={isUtage}
+                        className={`w-[3rem] h-[3rem] sm:w-[2.25rem] sm:h-[2.25rem] rounded text-white font-bold flex flex-col items-center justify-center text-base sm:text-sm leading-tight ${
+                          isUtage ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:scale-[1.0625] transition-transform'
+                        }`}
                         style={{ backgroundColor: color }}
                         data-testid="sheet-button"
-                        onClick={(e) => handleSheetClick(e, song, sheet)}
+                        onClick={(e) => !isUtage && handleSheetClick(e, song, sheet)}
                       >
                         <span>{sheet?.level}</span>
                         {sheet?.type && (
