@@ -492,13 +492,17 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
 
     const dataSpan = screen.getByText('Data')
     expect(dataSpan).toBeInTheDocument()
-    expect(dataSpan).toHaveClass('text-xl')
-    expect(dataSpan).toHaveClass('font-bold')
+    expect(dataSpan).toHaveClass('text-lg')
+    expect(dataSpan).not.toHaveClass('font-bold')
+    expect(dataSpan).toHaveClass('text-gray-500')
+    expect(dataSpan).toHaveClass('dark:text-gray-400')
 
     const displaySpan = screen.getByText('Display')
     expect(displaySpan).toBeInTheDocument()
-    expect(displaySpan).toHaveClass('text-xl')
-    expect(displaySpan).toHaveClass('font-bold')
+    expect(displaySpan).toHaveClass('text-lg')
+    expect(displaySpan).not.toHaveClass('font-bold')
+    expect(displaySpan).toHaveClass('text-gray-500')
+    expect(displaySpan).toHaveClass('dark:text-gray-400')
     expect(displaySpan).toHaveClass('mt-6')
 
     const listElements = screen.getAllByRole('list')
@@ -1038,13 +1042,18 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
 
     const displayContainer = screen.getByTestId('display-container')
     expect(displayContainer).not.toHaveClass('max-w-[1700px]')
-    expect(displayContainer).not.toHaveClass('mx-auto')
 
     const parentWrapper = displayContainer.parentElement
     expect(parentWrapper).toHaveClass('GRID-CONTAINER')
     expect(parentWrapper).toHaveClass('mx-auto')
     expect(parentWrapper).toHaveClass('w-full')
     expect(parentWrapper).toHaveClass('max-w-[1700px]')
+    expect(parentWrapper).toHaveClass('border')
+    expect(parentWrapper).toHaveClass('border-gray-200')
+    expect(parentWrapper).toHaveClass('dark:border-gray-800')
+    expect(parentWrapper).toHaveClass('rounded-lg')
+    expect(parentWrapper).toHaveClass('bg-gray-50')
+    expect(parentWrapper).toHaveClass('dark:bg-gray-800/50')
   })
 
   it('Requirement 5: Confirm button triggers Snackbar error when maimaiB50Charts has 50 objects', async () => {
@@ -2313,7 +2322,7 @@ describe('Filtering by Version, Type, and Level', () => {
   })
 
   it('Requirement 6 & 7: Applies correct min-w-[] and flex-row/flex-col to GRID-CONTAINER and GRID based on gridLayout columns, and positions GRID-NEW before GRID-OLD', async () => {
-    // Case 1: default 10 columns -> min-w-[1700px], flex-row, GRID-NEW before GRID-OLD
+    // Case 1: default 10 columns -> min-w-[1700px], max-w-[1700px], flex-row, GRID-NEW before GRID-OLD
     localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 10, rows: 5 }))
     const { unmount } = render(<App />)
 
@@ -2325,6 +2334,7 @@ describe('Filtering by Version, Type, and Level', () => {
     const gridContainer = displayContainer.parentElement!
     expect(gridContainer).toHaveClass('GRID-CONTAINER')
     expect(gridContainer).toHaveClass('min-w-[1700px]')
+    expect(gridContainer).toHaveClass('max-w-[1700px]')
     expect(displayContainer).toHaveClass('flex-row')
     expect(displayContainer).not.toHaveClass('flex-col')
 
@@ -2334,7 +2344,7 @@ describe('Filtering by Version, Type, and Level', () => {
 
     unmount()
 
-    // Case 2: 5 columns -> min-w-[900px], flex-col
+    // Case 2: 5 columns -> min-w-[900px], max-w-[900px], flex-col
     localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 5, rows: 10 }))
     const { unmount: unmount5 } = render(<App />)
 
@@ -2345,12 +2355,13 @@ describe('Filtering by Version, Type, and Level', () => {
     const displayContainer5 = screen.getByTestId('display-container')
     const gridContainer5 = displayContainer5.parentElement!
     expect(gridContainer5).toHaveClass('min-w-[900px]')
+    expect(gridContainer5).toHaveClass('max-w-[900px]')
     expect(displayContainer5).toHaveClass('flex-col')
     expect(displayContainer5).not.toHaveClass('flex-row')
 
     unmount5()
 
-    // Case 3: 2 columns -> min-w-[420px], flex-col
+    // Case 3: 2 columns -> min-w-[420px], max-w-[420px], flex-col
     localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 2, rows: 25 }))
     render(<App />)
 
@@ -2361,6 +2372,7 @@ describe('Filtering by Version, Type, and Level', () => {
     const displayContainer2 = screen.getByTestId('display-container')
     const gridContainer2 = displayContainer2.parentElement!
     expect(gridContainer2).toHaveClass('min-w-[420px]')
+    expect(gridContainer2).toHaveClass('max-w-[420px]')
     expect(displayContainer2).toHaveClass('flex-col')
     expect(displayContainer2).not.toHaveClass('flex-row')
   })
