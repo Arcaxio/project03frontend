@@ -996,85 +996,97 @@ function App() {
           </div>
 
           <div
-            className="SCORES h-[3.5rem] w-full max-w-4xl mx-auto flex justify-between items-center p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-            data-testid="scores-container"
+            className={`GRID-CONTAINER w-full max-w-[1700px] mx-auto ${
+              gridLayout.columns === 10
+                ? 'min-w-[1700px]'
+                : gridLayout.columns === 5
+                ? 'min-w-[900px]'
+                : 'min-w-[420px]'
+            }`}
           >
-            <div>
-              <span>Total: {total}</span>
+            <div
+              className="SCORES flex justify-between items-center w-full py-2 px-4"
+              data-testid="scores-container"
+            >
+              <div>
+                <span>Total: {total}</span>
+              </div>
+              <div>
+                <span>Old: {oldTotal}</span>
+              </div>
+              <div>
+                <span>New: {newTotal}</span>
+              </div>
             </div>
-            <div>
-              <span>Old: {oldTotal}</span>
-            </div>
-            <div>
-              <span>New: {newTotal}</span>
-            </div>
-          </div>
 
-          <div className="w-full max-w-[1700px] mx-auto">
+            <Divider className="py-1" />
+
             <div
               ref={gridRef}
-              className="w-full max-w-[1700px] min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
+              className={`min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center ${
+                gridLayout.columns === 10 ? 'flex-row' : 'flex-col'
+              }`}
               style={{
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
                 backgroundSize: 'cover',
               }}
               data-testid="display-container"
             >
-            <div
-              className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
-              data-testid="grid-old"
-            >
-              {maimaiB50Charts
-                .filter((item: any) => {
-                  const chartVer = item?.version ? String(item.version).toLowerCase() : ''
-                  return !(chartVer && newVersionLower.includes(chartVer))
-                })
-                .map((item: any, index: number) => {
-                  const color = getDifficultyColor(item?.difficulty)
-                  const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
-                  const isFocused = focusedChartKey === itemKey
-                  return (
-                    <B50ChartItem
-                      key={index}
-                      item={item}
-                      color={color}
-                      isFocused={isFocused}
-                      onFocus={() => setFocusedChartKey(itemKey)}
-                      onDelete={handleDeleteChartItem}
-                      onToggleCheck={handleToggleCheckChartItem}
-                    />
-                  )
-                })}
-            </div>
-            <Divider orientation="vertical" flexItem />
-            <div
-              className="GRID-NEW basis-[30%] flex flex-wrap content-start justify-center gap-2"
-              data-testid="grid-new"
-            >
-              {maimaiB50Charts
-                .filter((item: any) => {
-                  const chartVer = item?.version ? String(item.version).toLowerCase() : ''
-                  return Boolean(chartVer && newVersionLower.includes(chartVer))
-                })
-                .map((item: any, index: number) => {
-                  const color = getDifficultyColor(item?.difficulty)
-                  const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
-                  const isFocused = focusedChartKey === itemKey
-                  return (
-                    <B50ChartItem
-                      key={index}
-                      item={item}
-                      color={color}
-                      isFocused={isFocused}
-                      onFocus={() => setFocusedChartKey(itemKey)}
-                      onDelete={handleDeleteChartItem}
-                      onToggleCheck={handleToggleCheckChartItem}
-                    />
-                  )
-                })}
+              <div
+                className="GRID-NEW basis-[30%] flex flex-wrap content-start justify-center gap-2"
+                data-testid="grid-new"
+              >
+                {maimaiB50Charts
+                  .filter((item: any) => {
+                    const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                    return Boolean(chartVer && newVersionLower.includes(chartVer))
+                  })
+                  .map((item: any, index: number) => {
+                    const color = getDifficultyColor(item?.difficulty)
+                    const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
+                    const isFocused = focusedChartKey === itemKey
+                    return (
+                      <B50ChartItem
+                        key={index}
+                        item={item}
+                        color={color}
+                        isFocused={isFocused}
+                        onFocus={() => setFocusedChartKey(itemKey)}
+                        onDelete={handleDeleteChartItem}
+                        onToggleCheck={handleToggleCheckChartItem}
+                      />
+                    )
+                  })}
+              </div>
+              <Divider orientation="vertical" flexItem />
+              <div
+                className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
+                data-testid="grid-old"
+              >
+                {maimaiB50Charts
+                  .filter((item: any) => {
+                    const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                    return !(chartVer && newVersionLower.includes(chartVer))
+                  })
+                  .map((item: any, index: number) => {
+                    const color = getDifficultyColor(item?.difficulty)
+                    const itemKey = `${item?.songId}-${item?.difficulty}-${item?.target}`
+                    const isFocused = focusedChartKey === itemKey
+                    return (
+                      <B50ChartItem
+                        key={index}
+                        item={item}
+                        color={color}
+                        isFocused={isFocused}
+                        onFocus={() => setFocusedChartKey(itemKey)}
+                        onDelete={handleDeleteChartItem}
+                        onToggleCheck={handleToggleCheckChartItem}
+                      />
+                    )
+                  })}
+              </div>
             </div>
           </div>
-        </div>
 
           <Popover
             open={Boolean(anchorEl)}
@@ -1153,12 +1165,12 @@ function App() {
             onClose={() => setDrawerOpen(false)}
             data-testid="drawer"
           >
-            <div className="flex flex-col h-full w-[240px] p-4" style={{ width: 240 }}>
+            <div className="flex flex-col h-full w-[300px] p-4">
               <span className="text-2xl font-bold mb-2">Options</span>
               <Divider />
 
               <span className="text-xl font-bold mt-2">Data</span>
-              <List disablePadding style={{ width: 240 }}>
+              <List disablePadding>
                 {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
                   <ListItem key={text} disablePadding>
                     <ListItemButton onClick={() => handleMenuItemClick(text)}>
@@ -1172,7 +1184,7 @@ function App() {
               </List>
 
               <span className="text-xl font-bold mt-6">Display</span>
-              <List disablePadding style={{ width: 240 }}>
+              <List disablePadding>
                 <ListItem disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick(`Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`)}>
                     <ListItemIcon>

@@ -380,7 +380,7 @@ describe('SCORES Component Requirements', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('renders SCORES div between RESULTS and GRID with required classNames and inner spans', async () => {
+  it('renders SCORES div inside GRID-CONTAINER before GRID with required classNames and inner spans', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -389,24 +389,18 @@ describe('SCORES Component Requirements', () => {
 
     const scores = screen.getByTestId('scores-container')
     expect(scores).toHaveClass('SCORES')
-    expect(scores).toHaveClass('h-[3.5rem]')
-    expect(scores).toHaveClass('w-full')
     expect(scores).toHaveClass('flex')
     expect(scores).toHaveClass('justify-between')
     expect(scores).toHaveClass('items-center')
-    expect(scores).toHaveClass('p-2')
-    expect(scores).toHaveClass('border')
-    expect(scores).toHaveClass('border-gray-200')
-    expect(scores).toHaveClass('dark:border-gray-800')
-    expect(scores).toHaveClass('rounded-lg')
-    expect(scores).toHaveClass('bg-gray-50')
-    expect(scores).toHaveClass('dark:bg-gray-800/50')
+    expect(scores).toHaveClass('w-full')
+    expect(scores).toHaveClass('py-2')
+    expect(scores).toHaveClass('px-4')
 
-    const results = screen.getByTestId('results-container')
-    expect(results.nextElementSibling).toBe(scores)
+    const gridContainer = scores.parentElement
+    expect(gridContainer).toHaveClass('GRID-CONTAINER')
 
     const grid = screen.getByTestId('display-container')
-    expect(scores.nextElementSibling).toBe(grid.parentElement)
+    expect(grid.parentElement).toBe(gridContainer)
 
     const innerDivs = scores.querySelectorAll('div')
     expect(innerDivs.length).toBe(3)
@@ -509,8 +503,6 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
 
     const listElements = screen.getAllByRole('list')
     expect(listElements.length).toBe(2)
-    expect(listElements[0]).toHaveStyle({ width: '240px' })
-    expect(listElements[1]).toHaveStyle({ width: '240px' })
 
     expect(screen.getByText('Import')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
@@ -1037,7 +1029,7 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     expect(confirmBtn).not.toBeDisabled()
   })
 
-  it('has wrapper div with mx-auto around GRID display container, and display-container itself lacks mx-auto', async () => {
+  it('has GRID-CONTAINER wrapper div with max-w-[1700px] and min-w classes around GRID display container, and display-container itself lacks max-w-[1700px]', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -1045,10 +1037,11 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     })
 
     const displayContainer = screen.getByTestId('display-container')
-    expect(displayContainer).toHaveClass('max-w-[1700px]')
+    expect(displayContainer).not.toHaveClass('max-w-[1700px]')
     expect(displayContainer).not.toHaveClass('mx-auto')
 
     const parentWrapper = displayContainer.parentElement
+    expect(parentWrapper).toHaveClass('GRID-CONTAINER')
     expect(parentWrapper).toHaveClass('mx-auto')
     expect(parentWrapper).toHaveClass('w-full')
     expect(parentWrapper).toHaveClass('max-w-[1700px]')
@@ -2317,5 +2310,58 @@ describe('Filtering by Version, Type, and Level', () => {
       expect(screen.queryByText('ORANGE Song STD Only')).not.toBeInTheDocument() // only has 12
       expect(screen.queryByText('PRiSM Song DX Only')).not.toBeInTheDocument() // has 13
     })
+  })
+
+  it('Requirement 6 & 7: Applies correct min-w-[] and flex-row/flex-col to GRID-CONTAINER and GRID based on gridLayout columns, and positions GRID-NEW before GRID-OLD', async () => {
+    // Case 1: default 10 columns -> min-w-[1700px], flex-row, GRID-NEW before GRID-OLD
+    localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 10, rows: 5 }))
+    const { unmount } = render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const displayContainer = screen.getByTestId('display-container')
+    const gridContainer = displayContainer.parentElement!
+    expect(gridContainer).toHaveClass('GRID-CONTAINER')
+    expect(gridContainer).toHaveClass('min-w-[1700px]')
+    expect(displayContainer).toHaveClass('flex-row')
+    expect(displayContainer).not.toHaveClass('flex-col')
+
+    const children = Array.from(displayContainer.children)
+    expect(children[0]).toHaveClass('GRID-NEW')
+    expect(children[2]).toHaveClass('GRID-OLD')
+
+    unmount()
+
+    // Case 2: 5 columns -> min-w-[900px], flex-col
+    localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 5, rows: 10 }))
+    const { unmount: unmount5 } = render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const displayContainer5 = screen.getByTestId('display-container')
+    const gridContainer5 = displayContainer5.parentElement!
+    expect(gridContainer5).toHaveClass('min-w-[900px]')
+    expect(displayContainer5).toHaveClass('flex-col')
+    expect(displayContainer5).not.toHaveClass('flex-row')
+
+    unmount5()
+
+    // Case 3: 2 columns -> min-w-[420px], flex-col
+    localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 2, rows: 25 }))
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+    })
+
+    const displayContainer2 = screen.getByTestId('display-container')
+    const gridContainer2 = displayContainer2.parentElement!
+    expect(gridContainer2).toHaveClass('min-w-[420px]')
+    expect(displayContainer2).toHaveClass('flex-col')
+    expect(displayContainer2).not.toHaveClass('flex-row')
   })
 })
