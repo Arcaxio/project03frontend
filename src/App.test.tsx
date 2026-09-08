@@ -259,6 +259,111 @@ describe('Maimai Data & Caching Logic & MUI Dropdown', () => {
   })
 })
 
+describe('Grid Layout & Change Background Features', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    vi.restoreAllMocks()
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue({ updateTime: '1', songs: [] })
+    const futureCountdown = Date.now() + 60 * 60 * 1000
+    localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
+  })
+
+  it('Requirement 2: Grid Layout defaults to 10x5, opens modal on click, and updates state & localStorage on selecting option', async () => {
+    expect(localStorage.getItem('maimaiGridLayout')).toBeNull()
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Grid Layout: 10x5'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('grid-layout-modal')).toBeInTheDocument()
+      expect(screen.getByTestId('grid-layout-10x5-btn')).toBeInTheDocument()
+      expect(screen.getByTestId('grid-layout-5x10-btn')).toBeInTheDocument()
+      expect(screen.getByTestId('grid-layout-2x25-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('grid-layout-5x10-btn'))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('grid-layout-modal')).not.toBeInTheDocument()
+    })
+
+    const storedLayout = localStorage.getItem('maimaiGridLayout')
+    expect(storedLayout).not.toBeNull()
+    expect(JSON.parse(storedLayout!)).toEqual({ columns: 5, rows: 10 })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+    await waitFor(() => {
+      expect(screen.getByText('Grid Layout: 5x10')).toBeInTheDocument()
+    })
+  })
+
+  it('Requirement 2: Grid Layout initializes from localStorage on next page load', async () => {
+    localStorage.setItem('maimaiGridLayout', JSON.stringify({ columns: 2, rows: 25 }))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Grid Layout: 2x25')).toBeInTheDocument()
+    })
+  })
+
+  it('Requirement 3: Change Background prompts file upload, displays Close Icon when uploaded, applies backgroundImage with backgroundSize cover to GRID, and removes image on Close Icon click', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-container')).toBeInTheDocument()
+      expect(screen.getByTestId('bg-file-input')).toBeInTheDocument()
+    })
+
+    const gridContainer = screen.getByTestId('display-container')
+    expect(gridContainer.style.backgroundImage).toBe('')
+    expect(gridContainer.style.backgroundSize).toBe('cover')
+
+    const fileInput = screen.getByTestId('bg-file-input') as HTMLInputElement
+
+    const imageFile = new File(['fake image data'], 'bg.png', { type: 'image/png' })
+
+    fireEvent.change(fileInput, { target: { files: [imageFile] } })
+
+    await waitFor(() => {
+      expect(gridContainer.style.backgroundImage).toContain('data:image/png;base64,')
+    })
+    expect(gridContainer.style.backgroundSize).toBe('cover')
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('remove-bg-btn')).toBeInTheDocument()
+    })
+
+    const removeBtn = screen.getByTestId('remove-bg-btn')
+    fireEvent.click(removeBtn)
+
+    await waitFor(() => {
+      expect(gridContainer.style.backgroundImage).toBe('')
+    })
+    expect(screen.queryByTestId('remove-bg-btn')).not.toBeInTheDocument()
+  })
+})
+
 describe('SCORES Component Requirements', () => {
   const mockScoresData = {
     updateTime: '2026-08-21T01:13:03.602Z',
@@ -371,7 +476,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     localStorage.setItem(COUNTDOWN_KEY, futureCountdown.toString())
   })
 
-  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, Divider, width 240 List, and list items (Import, Export, Save Image, Clear B50 Data, Display: Grid, Github)', async () => {
+  it('Requirement 1: MenuIcon opens MUI Drawer containing Options text-2xl span, Divider, Data span, Display span (with mt-6), 2 List components, Change Background, Grid Layout: 10x5, and Github with mt-auto', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -386,24 +491,41 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
 
     const optionsText = screen.getByText('Options')
     expect(optionsText).toBeInTheDocument()
-    expect(optionsText).toHaveClass('text-2xl')
 
     const drawer = screen.getByTestId('drawer')
     const divider = drawer.querySelector('.MuiDivider-root')
     expect(divider).toBeInTheDocument()
 
-    const listElement = screen.getByRole('list')
-    expect(listElement).toHaveStyle({ width: '240px' })
+    const dataSpan = screen.getByText('Data')
+    expect(dataSpan).toBeInTheDocument()
+    expect(dataSpan).toHaveClass('text-xl')
+    expect(dataSpan).toHaveClass('font-bold')
+
+    const displaySpan = screen.getByText('Display')
+    expect(displaySpan).toBeInTheDocument()
+    expect(displaySpan).toHaveClass('text-xl')
+    expect(displaySpan).toHaveClass('font-bold')
+    expect(displaySpan).toHaveClass('mt-6')
+
+    const listElements = screen.getAllByRole('list')
+    expect(listElements.length).toBe(2)
+    expect(listElements[0]).toHaveStyle({ width: '240px' })
+    expect(listElements[1]).toHaveStyle({ width: '240px' })
 
     expect(screen.getByText('Import')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
     expect(screen.getByText('Save Image')).toBeInTheDocument()
     expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
     expect(screen.getByText('Display: Grid')).toBeInTheDocument()
+    expect(screen.getByText('Change Background')).toBeInTheDocument()
+    expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
     expect(screen.getByText('Github')).toBeInTheDocument()
+
+    const githubButton = screen.getByText('Github').closest('.MuiListItem-root')?.parentElement
+    expect(githubButton).toHaveClass('mt-auto')
   })
 
-  it('Requirement: Drawer contains "Display: Grid" above "Github" with ListIcon, and toggles text to "Display: List" when clicked', async () => {
+  it('Requirement: Drawer contains "Display: Grid" in second List, and toggles text to "Display: List" when clicked', async () => {
     render(<App />)
 
     await waitFor(() => {
@@ -417,15 +539,6 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     })
 
     const displayItem = screen.getByText('Display: Grid')
-
-    // Verify ordering: Display item comes before Github item
-    const listItems = screen.getAllByRole('listitem')
-    const displayIndex = listItems.findIndex((li) => li.textContent?.includes('Display:'))
-    const githubIndex = listItems.findIndex((li) => li.textContent?.includes('Github'))
-
-    expect(displayIndex).toBeGreaterThan(-1)
-    expect(githubIndex).toBeGreaterThan(-1)
-    expect(displayIndex).toBe(githubIndex - 1)
 
     // Click "Display: Grid" to toggle text
     fireEvent.click(displayItem)

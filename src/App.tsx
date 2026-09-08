@@ -9,6 +9,7 @@ import GitHubIcon from '@mui/icons-material/GitHub'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import CloseIcon from '@mui/icons-material/Close'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
 import Popover from '@mui/material/Popover'
@@ -242,7 +243,18 @@ function App() {
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
   const [snackbarMessage, setSnackbarMessage] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const bgFileInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
+  const [gridLayout, setGridLayout] = useState<{ columns: number; rows: number }>(() => {
+    try {
+      const saved = localStorage.getItem('maimaiGridLayout')
+      return saved ? JSON.parse(saved) : { columns: 10, rows: 5 }
+    } catch {
+      return { columns: 10, rows: 5 }
+    }
+  })
+  const [gridLayoutModalOpen, setGridLayoutModalOpen] = useState<boolean>(false)
   const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('maimaiB50Charts')
@@ -397,7 +409,32 @@ function App() {
       window.open('https://github.com/Arcaxio/project03frontend', '_blank', 'noopener,noreferrer')
     } else if (text.startsWith('Display:')) {
       setDisplayMode((prev) => (prev === 'grid' ? 'list' : 'grid'))
+    } else if (text === 'Change Background') {
+      bgFileInputRef.current?.click()
+    } else if (text.startsWith('Grid Layout:')) {
+      setGridLayoutModalOpen(true)
     }
+  }
+
+  const handleBgFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      if (result) {
+        setBackgroundImage(result)
+      }
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
+  }
+
+  const handleSelectGridLayout = (columns: number, rows: number) => {
+    const newLayout = { columns, rows }
+    setGridLayout(newLayout)
+    localStorage.setItem('maimaiGridLayout', JSON.stringify(newLayout))
+    setGridLayoutModalOpen(false)
   }
 
   const handleConfirmClear = () => {
@@ -977,6 +1014,10 @@ function App() {
             <div
               ref={gridRef}
               className="w-full max-w-[1700px] min-h-[60vh] p-2 border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 GRID flex content-start justify-center"
+              style={{
+                backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+                backgroundSize: 'cover',
+              }}
               data-testid="display-container"
             >
             <div
@@ -1112,28 +1153,123 @@ function App() {
             onClose={() => setDrawerOpen(false)}
             data-testid="drawer"
           >
-            <span className="text-2xl p-4 font-bold">Options</span>
-            <Divider />
-            <List style={{ width: 240 }}>
-              {[
-                'Import',
-                'Export',
-                'Save Image',
-                'Clear B50 Data',
-                `Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`,
-                'Github',
-              ].map((text) => (
-                <ListItem key={text} disablePadding>
-                  <ListItemButton onClick={() => handleMenuItemClick(text)}>
+            <div className="flex flex-col h-full w-[240px] p-4" style={{ width: 240 }}>
+              <span className="text-2xl font-bold mb-2">Options</span>
+              <Divider />
+
+              <span className="text-xl font-bold mt-2">Data</span>
+              <List disablePadding style={{ width: 240 }}>
+                {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
+                  <ListItem key={text} disablePadding>
+                    <ListItemButton onClick={() => handleMenuItemClick(text)}>
+                      <ListItemIcon>
+                        <ListIcon />
+                      </ListItemIcon>
+                      <ListItemText primary={text} />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+
+              <span className="text-xl font-bold mt-6">Display</span>
+              <List disablePadding style={{ width: 240 }}>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => handleMenuItemClick(`Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`)}>
                     <ListItemIcon>
-                      {text === 'Github' ? <GitHubIcon /> : <ListIcon />}
+                      <ListIcon />
                     </ListItemIcon>
-                    <ListItemText primary={text} />
+                    <ListItemText primary={`Display: ${displayMode === 'grid' ? 'Grid' : 'List'}`} />
                   </ListItemButton>
                 </ListItem>
-              ))}
-            </List>
+
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => handleMenuItemClick('Change Background')}>
+                    <ListItemIcon>
+                      <ListIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <span className="flex items-center justify-between w-full">
+                          <span>Change Background</span>
+                          {backgroundImage && (
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setBackgroundImage(null)
+                              }}
+                              data-testid="remove-bg-btn"
+                              aria-label="remove background"
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </span>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => handleMenuItemClick(`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`)}>
+                    <ListItemIcon>
+                      <ListIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+
+              <div className="mt-auto">
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => handleMenuItemClick('Github')}>
+                    <ListItemIcon>
+                      <GitHubIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Github" />
+                  </ListItemButton>
+                </ListItem>
+              </div>
+            </div>
           </Drawer>
+
+          <Dialog
+            open={gridLayoutModalOpen}
+            onClose={() => setGridLayoutModalOpen(false)}
+            data-testid="grid-layout-modal"
+          >
+            <DialogContent>
+              <DialogContentText className="mb-4">Select Grid Layout</DialogContentText>
+              <div className="flex flex-col gap-2 mt-2">
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectGridLayout(10, 5)}
+                  data-testid="grid-layout-10x5-btn"
+                >
+                  10x5
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectGridLayout(5, 10)}
+                  data-testid="grid-layout-5x10-btn"
+                >
+                  5x10
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectGridLayout(2, 25)}
+                  data-testid="grid-layout-2x25-btn"
+                >
+                  2x25
+                </Button>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setGridLayoutModalOpen(false)} color="inherit" data-testid="grid-layout-cancel-btn">
+                Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Dialog
             open={clearModalOpen}
@@ -1162,6 +1298,15 @@ function App() {
             style={{ display: 'none' }}
             onChange={handleFileImport}
             data-testid="import-file-input"
+          />
+
+          <input
+            type="file"
+            accept="image/*"
+            ref={bgFileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleBgFileImport}
+            data-testid="bg-file-input"
           />
 
           <Snackbar
