@@ -106,7 +106,7 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
         }}
         data-testid="b50-chart-item-list"
       >
-        <div className={`w-full h-full flex gap-2`}>
+        <div className={`w-full h-full flex gap-4`}>
           <div className="shrink-0 relative">
             {item?.type && (
               <img
@@ -127,11 +127,11 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
             )}
           </div>
 
-          <div className={`flex flex-col gap-4`}>
-            <span className="font-bold">
+          <div className={`flex flex-col`}>
+            <span className="text-sm font-bold truncate">
  {item?.internalLevelValue !== undefined &&
               item?.internalLevelValue !== null &&
-              item?.internalLevelValue !== '' && item.internalLevelValue}
+              item?.internalLevelValue !== '' && item.internalLevelValue} | 
 {item?.songId}</span>
 
             <span className="text-xs">
@@ -153,11 +153,11 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
               })()}
             </span>
 
-            <span className="text-xl font-bold">{item?.rating}</span>
+            <span className="font-bold">{item?.rating}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <IconButton
             size="small"
             onClick={(e) => {
@@ -1101,7 +1101,7 @@ function App() {
           <div
             className={`GRID-CONTAINER border border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-800/50 w-full mx-auto ${
               displayMode === 'list'
-                ? 'max-w-[1700px]'
+                ? 'max-w-[1000px]'
                 : gridLayout.columns === 10
                 ? 'min-w-[1700px] max-w-[1700px]'
                 : gridLayout.columns === 5
@@ -1124,7 +1124,7 @@ function App() {
               </div>
             </div>
 
-            <Divider className="py-1" />
+            <Divider />
 
             <div
               ref={gridRef}
@@ -1167,7 +1167,7 @@ function App() {
               <Divider
                 orientation={displayMode !== 'list' && gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
                 flexItem={displayMode !== 'list' && gridLayout.columns === 10}
-                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'py-1' : undefined}
+                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'pt-1 mt-1' : undefined}
               />
               <div
                 className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
