@@ -1088,12 +1088,28 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     // Checked item should have filter: brightness(0.5) permanently
     expect(chartItems[1]).toHaveStyle('filter: brightness(0.5)')
 
-    // Check overlay structure inside b50-chart-item
+    // Initially overlay is not rendered when not focused and not hovered
+    expect(screen.queryByTestId('b50-chart-overlay')).not.toBeInTheDocument()
+
+    // Hovering over first chart item renders the overlay
+    fireEvent.mouseOver(chartItems[0])
+
     const overlays = screen.getAllByTestId('b50-chart-overlay')
     expect(overlays[0]).toHaveClass('flex')
     expect(overlays[0]).toHaveClass('justify-center')
     expect(overlays[0]).toHaveClass('items-center')
     expect(overlays[0]).toHaveClass('gap-6')
+
+    // Verify IconButton wrapped in div with text-white text-xs span
+    const deleteBtn = screen.getByTestId('b50-delete-btn')
+    expect(deleteBtn.parentElement).toHaveClass('flex-col')
+    expect(deleteBtn.parentElement).toHaveClass('items-center')
+    expect(deleteBtn.parentElement?.querySelector('span')).toHaveTextContent('Delete')
+
+    const checkBtnWrapper = screen.getByTestId('b50-check-btn').parentElement
+    expect(checkBtnWrapper).toHaveClass('flex-col')
+    expect(checkBtnWrapper).toHaveClass('items-center')
+    expect(checkBtnWrapper?.querySelector('span')).toHaveTextContent('Check')
 
     // Test tapping check button on first item
     const checkBtns = screen.getAllByTestId('b50-check-btn')
@@ -1105,9 +1121,11 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
       expect(targetChart.checked).toBe(true)
     })
 
-    // Test delete button on second item
-    const deleteBtns = screen.getAllByTestId('b50-delete-btn')
-    fireEvent.click(deleteBtns[1])
+    // Mouse out from first item and mouse over second item
+    fireEvent.mouseOut(chartItems[0])
+    fireEvent.mouseOver(chartItems[1])
+    const deleteBtnSecond = screen.getByTestId('b50-delete-btn')
+    fireEvent.click(deleteBtnSecond)
 
     await waitFor(() => {
       const stored = JSON.parse(localStorage.getItem('maimaiB50Charts')!)
@@ -1498,6 +1516,40 @@ describe('Song Row Layout & Sheet Buttons Requirements', () => {
     expect(stdButtons[2]).toHaveStyle({ backgroundColor: 'rgb(158, 69, 226)' }) // #9e45e2
   })
 
+  it('disables sheet-button when sheet type is utage', async () => {
+    const utageData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      difficulties: [{ difficulty: 'expert', name: 'EXPERT', color: '#f64861' }],
+      songs: [
+        {
+          songId: 'song_utage_01',
+          title: 'Utage Song',
+          sheets: [
+            { type: 'utage', difficulty: 'expert', level: '13' },
+          ],
+        },
+      ],
+    }
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(utageData)
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    expect(sheetBtn).toBeDisabled()
+    expect(sheetBtn).toHaveClass('opacity-50')
+    expect(sheetBtn).toHaveClass('cursor-not-allowed')
+
+    fireEvent.click(sheetBtn)
+    expect(screen.queryByTestId('sheet-popover')).not.toBeInTheDocument()
+  })
+
   it('Requirement 3: First div is relative, has top-0 left-0 absolute image with type-std.png or type-dx.png and width 2.5rem', async () => {
     Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
     Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
@@ -1699,6 +1751,51 @@ describe('New Prompt Requirements: Rating calculation, Menu icon, Hover scale, a
     expect(storedChartsStr).not.toBeNull()
     const storedCharts = JSON.parse(storedChartsStr!)
     expect(storedCharts[0].rating).toBe(267)
+  })
+
+  it('caps target value at 100.5 when target score is over 100.5 (e.g. internalLevelValue 13.8, target 100.7 caps rating at 310 instead of 311)', async () => {
+    const customData = {
+      updateTime: '2026-08-21T01:13:03.602Z',
+      difficulties: [{ difficulty: 'master', name: 'MASTER', color: '#9e45e2' }],
+      songs: [
+        {
+          songId: 'song_cap_01',
+          title: 'Cap Test Song',
+          sheets: [
+            { type: 'dx', difficulty: 'master', level: '13+', internalLevelValue: 13.8 },
+          ],
+        },
+      ],
+    }
+    vi.spyOn(dbModule, 'getMaimaiData').mockResolvedValue(customData)
+
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 500 })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('results-container')).toBeInTheDocument()
+    })
+
+    const sheetBtn = screen.getByTestId('sheet-button')
+    fireEvent.click(sheetBtn)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('target-textfield')).toBeInTheDocument()
+    })
+
+    const targetInput = screen.getByTestId('target-textfield').querySelector('input')!
+    fireEvent.change(targetInput, { target: { value: '100.7' } })
+
+    const confirmBtn = screen.getByTestId('confirm-btn')
+    fireEvent.click(confirmBtn)
+
+    const storedChartsStr = localStorage.getItem('maimaiB50Charts')
+    expect(storedChartsStr).not.toBeNull()
+    const storedCharts = JSON.parse(storedChartsStr!)
+    // Math.floor(100.5 * 0.224 * 13.8) = Math.floor(310.668) = 310
+    expect(storedCharts[0].rating).toBe(310)
   })
 
   it('has hover:scale-[1.0625] and transition-transform class on sheet-button and b50-chart-item', async () => {
