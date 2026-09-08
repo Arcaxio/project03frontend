@@ -521,12 +521,28 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(githubButton).toHaveClass('mt-auto')
   })
 
-  it('Requirement: Drawer contains "Display: Grid" in second List, and toggles text to "Display: List" when clicked', async () => {
+  it('Requirement: Drawer contains "Display: Grid" in second List, toggles text to "Display: List" when clicked, saves "maimaiGridDisplay" to localStorage, and renders list item', async () => {
+    const sampleCharts = [
+      {
+        songId: 'song_display_test',
+        imageName: 'sample.png',
+        internalLevelValue: 13.0,
+        target: 100.0,
+        type: 'dx',
+        difficulty: 'expert',
+        rating: 280,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
     render(<App />)
 
     await waitFor(() => {
       expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
     })
+
+    expect(screen.getByTestId('b50-chart-item')).toBeInTheDocument()
+    expect(screen.queryByTestId('b50-chart-item-list')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('import-export-button'))
 
@@ -539,11 +555,37 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     // Click "Display: Grid" to toggle text
     fireEvent.click(displayItem)
 
+    expect(localStorage.getItem('maimaiGridDisplay')).toBe('list')
+    expect(screen.getByTestId('b50-chart-item-list')).toBeInTheDocument()
+    expect(screen.queryByTestId('b50-chart-item')).not.toBeInTheDocument()
+
     // Reopen drawer since handleMenuItemClick closes drawer
     fireEvent.click(screen.getByTestId('import-export-button'))
 
     await waitFor(() => {
       expect(screen.getByText('Display: List')).toBeInTheDocument()
+    })
+  })
+
+  it('Requirement: Initializes displayMode from localStorage "maimaiGridDisplay"', async () => {
+    localStorage.setItem('maimaiGridDisplay', 'list')
+    const sampleCharts = [
+      {
+        songId: 'song_init_test',
+        imageName: 'sample.png',
+        internalLevelValue: 12.0,
+        target: 99.5,
+        type: 'std',
+        difficulty: 'master',
+        rating: 260,
+      },
+    ]
+    localStorage.setItem('maimaiB50Charts', JSON.stringify(sampleCharts))
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('b50-chart-item-list')).toBeInTheDocument()
     })
   })
 

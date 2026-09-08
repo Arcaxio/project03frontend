@@ -87,12 +87,107 @@ interface B50ChartItemProps {
   onFocus: () => void
   onDelete: (item: any) => void
   onToggleCheck: (item: any) => void
+  displayMode?: string
 }
 
-function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck }: B50ChartItemProps) {
+function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck, displayMode }: B50ChartItemProps) {
   const isChecked = Boolean(item?.checked)
   const [isHovered, setIsHovered] = useState(false)
   const showOverlay = isFocused || isHovered
+
+  if (displayMode === 'list') {
+    return (
+      <div
+        className="flex justify-between border border-gray-200 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 h-[6.5rem] text-white"
+        style={{
+          backgroundColor: color,
+          borderColor: color,
+          filter: isChecked ? 'brightness(0.5)' : undefined,
+        }}
+        data-testid="b50-chart-item-list"
+      >
+        <div className={`w-full h-full flex gap-2`}>
+          <div className="shrink-0 relative">
+            {item?.type && (
+              <img
+                src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/type-${item.type.toLowerCase()}.png`}
+                alt={item.type}
+                className="absolute top-0 left-0 h-3"
+                data-testid="b50-type-badge"
+              />
+            )}
+            {item?.imageName && (
+              <img
+                src={`https://dp4p6x0xfi5o9.cloudfront.net/maimai/img/cover-m/${item.imageName}`}
+                alt={item?.songId || ''}
+                className="w-[4rem] h-[4rem] object-cover rounded"
+                style={{ width: '4rem', height: '4rem' }}
+                data-testid="b50-chart-img"
+              />
+            )}
+          </div>
+
+          <div className={`gap-4`}>
+            <span className="truncate font-bold">{item?.songId}</span>
+
+            {item?.internalLevelValue !== undefined &&
+              item?.internalLevelValue !== null &&
+              item?.internalLevelValue !== '' && (
+                <span className="shrink-0">| {item.internalLevelValue}</span>
+              )}
+
+            <span className="text-xs">
+              {item?.target} |{' '}
+              {(() => {
+                const targetNum =
+                  typeof item?.target === 'number'
+                    ? item.target
+                    : parseFloat(item?.target) || 0
+                const matchedObj = ratingFactor.find(
+                  (rf) => targetNum >= rf.minAchv
+                )
+                const titleStr = matchedObj ? matchedObj.title : ''
+                return item?.target !== undefined &&
+                  item?.target !== null &&
+                  item?.target !== ''
+                  ? titleStr
+                  : ''
+              })()}
+            </span>
+
+            <span className="text-xl font-bold">{item?.rating}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(item)
+            }}
+            aria-label="delete chart"
+            data-testid="b50-delete-btn"
+            sx={{ color: 'white' }}
+          >
+            <DeleteIcon />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleCheck(item)
+            }}
+            aria-label="toggle check chart"
+            data-testid="b50-check-btn"
+            sx={{ color: 'white' }}
+          >
+            {isChecked ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+          </IconButton>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -264,7 +359,17 @@ function App() {
     }
   })
   const [focusedChartKey, setFocusedChartKey] = useState<string | null>(null)
-  const [displayMode, setDisplayMode] = useState<string>('grid')
+  const [displayMode, setDisplayMode] = useState<string>(() => {
+    try {
+      return localStorage.getItem('maimaiGridDisplay') || 'grid'
+    } catch {
+      return 'grid'
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('maimaiGridDisplay', displayMode)
+  }, [displayMode])
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
@@ -1054,6 +1159,7 @@ function App() {
                         onFocus={() => setFocusedChartKey(itemKey)}
                         onDelete={handleDeleteChartItem}
                         onToggleCheck={handleToggleCheckChartItem}
+                        displayMode={displayMode}
                       />
                     )
                   })}
@@ -1085,6 +1191,7 @@ function App() {
                         onFocus={() => setFocusedChartKey(itemKey)}
                         onDelete={handleDeleteChartItem}
                         onToggleCheck={handleToggleCheckChartItem}
+                        displayMode={displayMode}
                       />
                     )
                   })}
