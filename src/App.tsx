@@ -1103,11 +1103,11 @@ function App() {
               displayMode === 'list'
                 ? 'max-w-[1000px]'
                 : gridLayout.columns === 10
-                ? 'min-w-[1700px] max-w-[1700px]'
+                ? 'sm:min-w-[1700px] sm:max-w-[1700px]'
                 : gridLayout.columns === 5
-                ? 'min-w-[900px] max-w-[900px]'
-                : 'min-w-[420px] max-w-[420px]'
-            } sm:min-w-[0px] sm:max-w-[0px]`}
+                ? 'sm:min-w-[900px] sm:max-w-[900px]'
+                : 'sm:min-w-[420px] sm:max-w-[420px]'
+            } min-w-[0px] max-w-[0px]`}
           >
             <div
               className="SCORES flex justify-between items-center w-full py-2 px-4"
@@ -1132,11 +1132,11 @@ function App() {
                 displayMode === 'list'
                 ? 'flex-col'
                 : gridLayout.columns === 10
-                ? 'flex-row sm:min-w-[1700px]'
+                ? 'flex-row min-w-[1700px]'
                 : gridLayout.columns === 5
-                ? 'flex-col sm:min-w-[900px]'
-                : 'flex-col sm:min-w-[420px]'
-              }`}
+                ? 'flex-col min-w-[900px]'
+                : 'flex-col min-w-[420px]'
+              } sm:min-w-[0px]`}
               style={{
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
                 backgroundSize: 'cover',
