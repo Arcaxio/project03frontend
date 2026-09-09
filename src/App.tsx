@@ -1124,7 +1124,7 @@ function App() {
               </div>
             </div>
 
-            <Divider />
+            < />
 
             <div
               ref={gridRef}
@@ -1167,7 +1167,8 @@ function App() {
               <Divider
                 orientation={displayMode !== 'list' && gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
                 flexItem={displayMode !== 'list' && gridLayout.columns === 10}
-                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'pt-2 mb-2' : undefined}
+                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'pt-2' : undefined}
+                sx={{ marginBottom: displayMode === 'list' || gridLayout.columns !== 10 ? '8px' : '0px'}}
               />
               <div
                 className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
