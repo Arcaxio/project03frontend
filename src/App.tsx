@@ -106,7 +106,7 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
         }}
         data-testid="b50-chart-item-list"
       >
-        <div className={`w-full h-full flex gap-4`}>
+        <div className={`h-full flex gap-2`}>
           <div className="shrink-0 relative">
             {item?.type && (
               <img
@@ -127,11 +127,11 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
             )}
           </div>
 
-          <div className={`flex flex-col`}>
+          <div className={`flex flex-col justify-center max-w-[calc(100%_-_64px_-_10px)]`}>
             <span className="text-sm font-bold truncate">
  {item?.internalLevelValue !== undefined &&
               item?.internalLevelValue !== null &&
-              item?.internalLevelValue !== '' && item.internalLevelValue} | 
+              item?.internalLevelValue !== '' && item.internalLevelValue}{" | "}
 {item?.songId}</span>
 
             <span className="text-xs">
@@ -987,7 +987,7 @@ function App() {
               }}
             >
               <div
-                className="absolute top-0 left-0 w-full flex flex-col gap-1"
+                className="absolute top-0 left-0 w-full flex flex-col gap-2"
                 style={{
                   transform: `translateY(${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px)`,
                 }}
@@ -1106,7 +1106,7 @@ function App() {
                 ? 'min-w-[1700px] max-w-[1700px]'
                 : gridLayout.columns === 5
                 ? 'min-w-[900px] max-w-[900px]'
-                : 'min-w-[420px] max-w-[420px]'
+                : 'min-w-[420px] sm:min-w-[350px] max-w-[420px]'
             }`}
           >
             <div
@@ -1167,7 +1167,7 @@ function App() {
               <Divider
                 orientation={displayMode !== 'list' && gridLayout.columns === 10 ? 'vertical' : 'horizontal'}
                 flexItem={displayMode !== 'list' && gridLayout.columns === 10}
-                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'pt-1 mt-1' : undefined}
+                className={displayMode === 'list' || gridLayout.columns !== 10 ? 'pt-2 mb-2' : undefined}
               />
               <div
                 className="GRID-OLD basis-[70%] flex flex-wrap content-start justify-center gap-2"
