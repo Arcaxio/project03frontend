@@ -1106,8 +1106,8 @@ function App() {
                 ? 'min-w-[1700px] max-w-[1700px]'
                 : gridLayout.columns === 5
                 ? 'min-w-[900px] max-w-[900px]'
-                : 'min-w-[420px] sm:min-w-[350px] max-w-[420px]'
-            }`}
+                : 'min-w-[420px] max-w-[420px]'
+            } sm:min-w-[0px] sm:max-w-[0px]`}
           >
             <div
               className="SCORES flex justify-between items-center w-full py-2 px-4"
@@ -1129,7 +1129,13 @@ function App() {
             <div
               ref={gridRef}
               className={`min-h-[60vh] p-2 GRID flex content-start justify-center ${
-                displayMode === 'list' || gridLayout.columns !== 10 ? 'flex-col' : 'flex-row'
+                displayMode === 'list'
+                ? 'flex-col'
+                : gridLayout.columns === 10
+                ? 'flex-row sm:min-w-[1700px]'
+                : gridLayout.columns === 5
+                ? 'flex-col sm:min-w-[900px]'
+                : 'flex-col sm:min-w-[420px]'
               }`}
               style={{
                 backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
