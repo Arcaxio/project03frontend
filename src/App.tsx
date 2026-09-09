@@ -106,7 +106,7 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
         }}
         data-testid="b50-chart-item-list"
       >
-        <div className={`h-full flex gap-2 max-w-[calc(100%_-_92px)]`}>
+        <div className={`h-full flex gap-2 w-[calc(100%_-_92px)]`}>
           <div className="shrink-0 relative">
             {item?.type && (
               <img
