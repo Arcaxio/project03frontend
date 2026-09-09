@@ -128,14 +128,13 @@ function B50ChartItem({ item, color, isFocused, onFocus, onDelete, onToggleCheck
           </div>
 
           <div className={`flex flex-col justify-center max-w-[calc(100%_-_64px_-_10px)]`}>
-            <span className="text-sm font-bold truncate">
- {item?.internalLevelValue !== undefined &&
-              item?.internalLevelValue !== null &&
-              item?.internalLevelValue !== '' && item.internalLevelValue}{" | "}
-{item?.songId}</span>
+            <span className="text-sm font-bold truncate">{item?.songId}</span>
 
             <span className="text-xs">
-              {item?.target} |{' '}
+               {item?.internalLevelValue !== undefined &&
+              item?.internalLevelValue !== null &&
+              item?.internalLevelValue !== '' && item.internalLevelValue}{' | '}
+              {item?.target}{' | '}
               {(() => {
                 const targetNum =
                   typeof item?.target === 'number'
@@ -1132,7 +1131,7 @@ function App() {
                 displayMode === 'list'
                 ? 'flex-col'
                 : gridLayout.columns === 10
-                ? 'flex-row min-w-[1672px]'
+                ? 'flex-row min-w-[1700px]'
                 : gridLayout.columns === 5
                 ? 'flex-col min-w-[848px]'
                 : 'flex-col min-w-[344px]'
