@@ -1124,7 +1124,7 @@ function App() {
               </div>
             </div>
 
-            < />
+            <Divider />
 
             <div
               ref={gridRef}
