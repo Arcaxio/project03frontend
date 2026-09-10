@@ -81,6 +81,31 @@ export const ratingFactor = [
   { minAchv: 0.0, factor: 0.016, title: 'D' },
 ]
 
+export const TAILWIND_COLORS: Record<string, string> = {
+  'slate-400': '#94a3b8',
+  'gray-400': '#9ca3af',
+  'zinc-400': '#a1a1aa',
+  'neutral-400': '#a3a3a3',
+  'stone-400': '#a8a29e',
+  'red-400': '#f87171',
+  'orange-400': '#fb923c',
+  'amber-400': '#fbbf24',
+  'yellow-400': '#facc15',
+  'lime-400': '#a3e635',
+  'green-400': '#4ade80',
+  'emerald-400': '#34d399',
+  'teal-400': '#2dd4bf',
+  'cyan-400': '#22d3ee',
+  'sky-400': '#38bdf8',
+  'blue-400': '#60a5fa',
+  'indigo-400': '#818cf8',
+  'violet-400': '#a78bfa',
+  'purple-400': '#c084fc',
+  'fuchsia-400': '#e879f9',
+  'pink-400': '#f472b6',
+  'rose-400': '#fb7185',
+}
+
 interface B50ChartItemProps {
   item: any
   color?: string
@@ -349,6 +374,14 @@ function App() {
     }
   })
   const [gridLayoutModalOpen, setGridLayoutModalOpen] = useState<boolean>(false)
+  const [themeModalOpen, setThemeModalOpen] = useState<boolean>(false)
+  const [themeColor, setThemeColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem('themeColor') || 'blue-400'
+    } catch {
+      return 'blue-400'
+    }
+  })
   const [maimaiB50Charts, setMaimaiB50Charts] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('maimaiB50Charts')
@@ -399,9 +432,12 @@ function App() {
         },
         palette: {
           mode: darkMode ? 'dark' : 'light',
+          primary: {
+            main: TAILWIND_COLORS[themeColor] || themeColor || '#60a5fa',
+          },
         },
       }),
-    [darkMode],
+    [darkMode, themeColor],
   )
 
   useEffect(() => {
@@ -519,6 +555,8 @@ function App() {
       bgFileInputRef.current?.click()
     } else if (text.startsWith('Grid Layout:')) {
       setGridLayoutModalOpen(true)
+    } else if (text === 'Change Theme') {
+      setThemeModalOpen(true)
     }
   }
 
@@ -1316,6 +1354,18 @@ function App() {
                 </ListItem>
 
                 <ListItem disablePadding>
+                  <ListItemButton
+                    disabled={displayMode === 'list'}
+                    onClick={() => handleMenuItemClick(`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`)}
+                  >
+                    <ListItemIcon>
+                      <ListIcon />
+                    </ListItemIcon>
+                    <ListItemText primary={`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`} />
+                  </ListItemButton>
+                </ListItem>
+
+                <ListItem disablePadding>
                   <ListItemButton onClick={() => handleMenuItemClick('Change Background')}>
                     <ListItemIcon>
                       <ListIcon />
@@ -1344,14 +1394,11 @@ function App() {
                 </ListItem>
 
                 <ListItem disablePadding>
-                  <ListItemButton
-                    disabled={displayMode === 'list'}
-                    onClick={() => handleMenuItemClick(`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`)}
-                  >
+                  <ListItemButton onClick={() => handleMenuItemClick('Change Theme')}>
                     <ListItemIcon>
                       <ListIcon />
                     </ListItemIcon>
-                    <ListItemText primary={`Grid Layout: ${gridLayout.columns}x${gridLayout.rows}`} />
+                    <ListItemText primary="Change Theme" />
                   </ListItemButton>
                 </ListItem>
               </List>
@@ -1413,6 +1460,49 @@ function App() {
             <DialogActions>
               <Button onClick={() => setGridLayoutModalOpen(false)} color="inherit" data-testid="grid-layout-cancel-btn">
                 Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={themeModalOpen}
+            onClose={() => setThemeModalOpen(false)}
+            data-testid="theme-modal"
+            maxWidth="xs"
+            fullWidth
+          >
+            <DialogContent>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2" data-testid="theme-selected-container">
+                  <span>Currently selected theme color: </span>
+                  <div
+                    className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600"
+                    style={{ backgroundColor: TAILWIND_COLORS[themeColor] || themeColor }}
+                    data-testid="current-theme-color-indicator"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3 justify-center" data-testid="theme-colors-container">
+                  {Object.entries(TAILWIND_COLORS).map(([colorName, colorHex]) => (
+                    <button
+                      key={colorName}
+                      type="button"
+                      aria-label={colorName}
+                      className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform"
+                      style={{ backgroundColor: colorHex }}
+                      data-testid={`theme-color-btn-${colorName}`}
+                      onClick={() => {
+                        setThemeColor(colorName)
+                        localStorage.setItem('themeColor', colorName)
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setThemeModalOpen(false)} color="inherit" data-testid="theme-modal-close-btn">
+                Close
               </Button>
             </DialogActions>
           </Dialog>
