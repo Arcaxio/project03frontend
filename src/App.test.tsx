@@ -506,7 +506,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(displaySpan).toHaveClass('mt-6')
 
     const listElements = screen.getAllByRole('list')
-    expect(listElements.length).toBe(2)
+    expect(listElements.length).toBe(3)
 
     expect(screen.getByText('Import')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
@@ -515,10 +515,55 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(screen.getByText('Display: Grid')).toBeInTheDocument()
     expect(screen.getByText('Change Background')).toBeInTheDocument()
     expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
+    expect(screen.getByText('Guide')).toBeInTheDocument()
     expect(screen.getByText('Github')).toBeInTheDocument()
 
-    const githubButton = screen.getByText('Github').closest('.MuiListItem-root')?.parentElement
-    expect(githubButton).toHaveClass('mt-auto')
+    const bottomList = screen.getByText('Guide').closest('.MuiList-root')?.parentElement
+    expect(bottomList).toHaveClass('mt-auto')
+
+    const guideItem = screen.getByText('Guide').closest('.MuiListItem-root')
+    const githubItem = screen.getByText('Github').closest('.MuiListItem-root')
+    expect(guideItem?.nextElementSibling).toBe(githubItem)
+  })
+
+  it('Requirement: Clicking "Guide" in Drawer opens GuideModal with expected content and close button', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Guide')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Guide'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('guide-modal')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('What it can do')).toBeInTheDocument()
+    expect(screen.getByText("Create a b50 from scratch by searching up charts you're trying to target")).toBeInTheDocument()
+    expect(screen.getByText('Check charts that you have obtained the score for')).toBeInTheDocument()
+    expect(screen.getByText('Checked charts will look darker compared to unchecked charts')).toBeInTheDocument()
+    expect(screen.getByText('Run offline granted you have accessed it online before')).toBeInTheDocument()
+    expect(screen.getByText("Chart data is stored locally, however images will not load if they haven't been loaded in before")).toBeInTheDocument()
+
+    expect(screen.getByText("What it can't do")).toBeInTheDocument()
+    expect(screen.getByText('Import your existing B50 from maimai.net')).toBeInTheDocument()
+    expect(screen.getByText('I have not figured out how to extract the data from maimai.net')).toBeInTheDocument()
+    expect(screen.getByText('Cross-sync to other devices, the data stays on your device')).toBeInTheDocument()
+    expect(screen.getByText('You can however, export your b50, and reimport it on a separate device. May consider adding this functionality in the future')).toBeInTheDocument()
+
+    const closeBtn = screen.getByTestId('guide-modal-close-btn')
+    fireEvent.click(closeBtn)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('guide-modal')).not.toBeInTheDocument()
+    })
   })
 
   it('Requirement: Drawer contains "Display: Grid" in second List, toggles text to "Display: List" when clicked, saves "maimaiGridDisplay" to localStorage, and renders list item', async () => {
@@ -619,10 +664,10 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
 
     const gridContainer = screen.getByTestId('display-container').parentElement!
     expect(gridContainer).toHaveClass('GRID-CONTAINER')
-    expect(gridContainer).toHaveClass('max-w-[1700px]')
-    expect(gridContainer).not.toHaveClass('min-w-[1700px]')
-    expect(gridContainer).not.toHaveClass('min-w-[900px]')
-    expect(gridContainer).not.toHaveClass('min-w-[420px]')
+    expect(gridContainer).toHaveClass('max-w-[1000px]')
+    expect(gridContainer).not.toHaveClass('sm:min-w-[1700px]')
+    expect(gridContainer).not.toHaveClass('sm:min-w-[900px]')
+    expect(gridContainer).not.toHaveClass('sm:min-w-[420px]')
 
     const displayContainer = screen.getByTestId('display-container')
     expect(displayContainer).toHaveClass('flex-col')
@@ -1132,13 +1177,13 @@ describe('ImportExport Header Button, Sheet Popover and maimaiB50Charts GRID Req
     })
 
     const displayContainer = screen.getByTestId('display-container')
-    expect(displayContainer).not.toHaveClass('max-w-[1700px]')
+    expect(displayContainer).not.toHaveClass('sm:max-w-[1700px]')
 
     const parentWrapper = displayContainer.parentElement
     expect(parentWrapper).toHaveClass('GRID-CONTAINER')
     expect(parentWrapper).toHaveClass('mx-auto')
     expect(parentWrapper).toHaveClass('w-full')
-    expect(parentWrapper).toHaveClass('max-w-[1700px]')
+    expect(parentWrapper).toHaveClass('sm:max-w-[1700px]')
     expect(parentWrapper).toHaveClass('border')
     expect(parentWrapper).toHaveClass('border-gray-200')
     expect(parentWrapper).toHaveClass('dark:border-gray-800')
@@ -1427,7 +1472,7 @@ describe('Dropdowns and Main Layout Requirements', () => {
     const displayDiv = screen.getByTestId('display-container')
     expect(displayDiv).toHaveClass('min-h-[60vh]')
     expect(displayDiv).toHaveClass('p-2')
-    expect(displayDiv).toHaveClass('content-start')
+    expect(displayDiv).not.toHaveClass('content-start')
     expect(displayDiv).toHaveClass('justify-center')
     expect(displayDiv).not.toHaveClass('gap-2')
 
@@ -2424,8 +2469,8 @@ describe('Filtering by Version, Type, and Level', () => {
     const displayContainer = screen.getByTestId('display-container')
     const gridContainer = displayContainer.parentElement!
     expect(gridContainer).toHaveClass('GRID-CONTAINER')
-    expect(gridContainer).toHaveClass('min-w-[1700px]')
-    expect(gridContainer).toHaveClass('max-w-[1700px]')
+    expect(gridContainer).toHaveClass('sm:min-w-[1700px]')
+    expect(gridContainer).toHaveClass('sm:max-w-[1700px]')
     expect(displayContainer).toHaveClass('flex-row')
     expect(displayContainer).not.toHaveClass('flex-col')
 
@@ -2445,8 +2490,8 @@ describe('Filtering by Version, Type, and Level', () => {
 
     const displayContainer5 = screen.getByTestId('display-container')
     const gridContainer5 = displayContainer5.parentElement!
-    expect(gridContainer5).toHaveClass('min-w-[900px]')
-    expect(gridContainer5).toHaveClass('max-w-[900px]')
+    expect(gridContainer5).toHaveClass('sm:min-w-[900px]')
+    expect(gridContainer5).toHaveClass('sm:max-w-[900px]')
     expect(displayContainer5).toHaveClass('flex-col')
     expect(displayContainer5).not.toHaveClass('flex-row')
 
@@ -2462,8 +2507,8 @@ describe('Filtering by Version, Type, and Level', () => {
 
     const displayContainer2 = screen.getByTestId('display-container')
     const gridContainer2 = displayContainer2.parentElement!
-    expect(gridContainer2).toHaveClass('min-w-[420px]')
-    expect(gridContainer2).toHaveClass('max-w-[420px]')
+    expect(gridContainer2).toHaveClass('sm:min-w-[420px]')
+    expect(gridContainer2).toHaveClass('sm:max-w-[420px]')
     expect(displayContainer2).toHaveClass('flex-col')
     expect(displayContainer2).not.toHaveClass('flex-row')
   })
