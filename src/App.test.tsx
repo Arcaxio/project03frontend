@@ -513,9 +513,17 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(screen.getByText('Save Image')).toBeInTheDocument()
     expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
     expect(screen.getByText('Display: Grid')).toBeInTheDocument()
-    expect(screen.getByText('Change Background')).toBeInTheDocument()
     expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
+    expect(screen.getByText('Change Background')).toBeInTheDocument()
+    expect(screen.getByText('Change Theme')).toBeInTheDocument()
     expect(screen.getByText('Guide')).toBeInTheDocument()
+
+    const displayListItems = screen.getByText('Display').nextElementSibling?.querySelectorAll('.MuiListItem-root')
+    expect(displayListItems?.length).toBe(4)
+    expect(displayListItems?.[0]).toHaveTextContent('Display: Grid')
+    expect(displayListItems?.[1]).toHaveTextContent('Grid Layout: 10x5')
+    expect(displayListItems?.[2]).toHaveTextContent('Change Background')
+    expect(displayListItems?.[3]).toHaveTextContent('Change Theme')
     expect(screen.getByText('Github')).toBeInTheDocument()
 
     const bottomList = screen.getByText('Guide').closest('.MuiList-root')?.parentElement
