@@ -6,6 +6,7 @@ import LightModeIcon from '@mui/icons-material/LightMode'
 import MenuIcon from '@mui/icons-material/Menu'
 import ListIcon from '@mui/icons-material/List'
 import GitHubIcon from '@mui/icons-material/GitHub'
+import ArticleIcon from '@mui/icons-material/Article'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
@@ -332,6 +333,7 @@ function App() {
   const [targetScore, setTargetScore] = useState<number | string>('')
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
   const [clearModalOpen, setClearModalOpen] = useState<boolean>(false)
+  const [guideModalOpen, setGuideModalOpen] = useState<boolean>(false)
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
   const [snackbarMessage, setSnackbarMessage] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -507,6 +509,8 @@ function App() {
       fileInputRef.current?.click()
     } else if (text === 'Save Image') {
       handleSaveImage()
+    } else if (text === 'Guide') {
+      setGuideModalOpen(true)
     } else if (text === 'Github') {
       window.open('https://github.com/Arcaxio/project03frontend', '_blank', 'noopener,noreferrer')
     } else if (text.startsWith('Display:')) {
@@ -1353,14 +1357,24 @@ function App() {
               </List>
 
               <div className="mt-auto">
-                <ListItem disablePadding>
-                  <ListItemButton onClick={() => handleMenuItemClick('Github')}>
-                    <ListItemIcon>
-                      <GitHubIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Github" />
-                  </ListItemButton>
-                </ListItem>
+                <List disablePadding>
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => handleMenuItemClick('Guide')}>
+                      <ListItemIcon>
+                        <ArticleIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Guide" />
+                    </ListItemButton>
+                  </ListItem>
+                  <ListItem disablePadding>
+                    <ListItemButton onClick={() => handleMenuItemClick('Github')}>
+                      <ListItemIcon>
+                        <GitHubIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Github" />
+                    </ListItemButton>
+                  </ListItem>
+                </List>
               </div>
             </div>
           </Drawer>
@@ -1399,6 +1413,60 @@ function App() {
             <DialogActions>
               <Button onClick={() => setGridLayoutModalOpen(false)} color="inherit" data-testid="grid-layout-cancel-btn">
                 Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={guideModalOpen}
+            onClose={() => setGuideModalOpen(false)}
+            data-testid="guide-modal"
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogContent>
+              <div className="space-y-4 text-sm text-gray-800 dark:text-gray-200">
+                <div>
+                  <h2 className="text-lg font-bold mb-2">What it can do</h2>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Create a b50 from scratch by searching up charts you're trying to target</li>
+                    <li>
+                      Check charts that you have obtained the score for
+                      <blockquote className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 italic mt-1 text-gray-600 dark:text-gray-400">
+                        Checked charts will look darker compared to unchecked charts
+                      </blockquote>
+                    </li>
+                    <li>
+                      Run offline granted you have accessed it online before
+                      <blockquote className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 italic mt-1 text-gray-600 dark:text-gray-400">
+                        Chart data is stored locally, however images will not load if they haven't been loaded in before
+                      </blockquote>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold mb-2">What it can't do</h2>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>
+                      Import your existing B50 from maimai.net
+                      <blockquote className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 italic mt-1 text-gray-600 dark:text-gray-400">
+                        I have not figured out how to extract the data from maimai.net
+                      </blockquote>
+                    </li>
+                    <li>
+                      Cross-sync to other devices, the data stays on your device
+                      <blockquote className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 italic mt-1 text-gray-600 dark:text-gray-400">
+                        You can however, export your b50, and reimport it on a separate device. May consider adding this functionality in the future
+                      </blockquote>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setGuideModalOpen(false)} color="inherit" data-testid="guide-modal-close-btn">
+                Close
               </Button>
             </DialogActions>
           </Dialog>
