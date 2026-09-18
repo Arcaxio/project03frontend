@@ -398,6 +398,14 @@ function App() {
       return 'grid'
     }
   })
+  const [maimaiVersion, setMaimaiVersion] = useState<string>(() => {
+    try {
+      return localStorage.getItem('maimaiVersion') || 'japan'
+    } catch {
+      return 'japan'
+    }
+  })
+  const [versionModalOpen, setVersionModalOpen] = useState<boolean>(false)
 
   useEffect(() => {
     localStorage.setItem('maimaiGridDisplay', displayMode)
@@ -545,6 +553,8 @@ function App() {
       fileInputRef.current?.click()
     } else if (text === 'Save Image') {
       handleSaveImage()
+    } else if (text === 'Version') {
+      setVersionModalOpen(true)
     } else if (text === 'Guide') {
       setGuideModalOpen(true)
     } else if (text === 'Github') {
@@ -558,6 +568,12 @@ function App() {
     } else if (text === 'Change Theme') {
       setThemeModalOpen(true)
     }
+  }
+
+  const handleSelectVersion = (ver: string) => {
+    setMaimaiVersion(ver)
+    localStorage.setItem('maimaiVersion', ver)
+    setVersionModalOpen(false)
   }
 
   const handleBgFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -815,7 +831,24 @@ function App() {
   const types = extractItems(maimaiData?.types, 'type')
   const versions = extractItems(maimaiData?.versions, 'version')
 
-  const newVersionNames = versions.length >= 2 ? versions.slice(-2) : ['CiRCLE', 'CiRCLE PLUS']
+  const versionsList = versions.length > 0 ? versions : ['maimai', 'CiRCLE', 'CiRCLE PLUS']
+
+  const newVersionNames =
+    maimaiVersion === 'international'
+      ? (versionsList.length >= 3
+          ? versionsList.slice(-3, -1)
+          : versionsList.length === 2
+          ? versionsList.slice(0, 1)
+          : ['CiRCLE'])
+      : (versionsList.length >= 2
+          ? versionsList.slice(-2)
+          : ['CiRCLE', 'CiRCLE PLUS'])
+
+  const omittedVersionLower =
+    maimaiVersion === 'international' && versionsList.length >= 1
+      ? [versionsList[versionsList.length - 1].toLowerCase()]
+      : []
+
   const newVersionLower = newVersionNames.map((v) => v.toLowerCase())
 
   let total = 0
@@ -824,8 +857,11 @@ function App() {
 
   for (const chart of maimaiB50Charts) {
     const rating = Number(chart?.rating) || 0
-    total += rating
     const chartVer = chart?.version ? String(chart.version).toLowerCase() : ''
+    if (chartVer && omittedVersionLower.includes(chartVer)) {
+      continue
+    }
+    total += rating
     if (chartVer && newVersionLower.includes(chartVer)) {
       newTotal += rating
     } else {
@@ -1191,6 +1227,9 @@ function App() {
                 {maimaiB50Charts
                   .filter((item: any) => {
                     const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                    if (chartVer && omittedVersionLower.includes(chartVer)) {
+                      return false
+                    }
                     return Boolean(chartVer && newVersionLower.includes(chartVer))
                   })
                   .map((item: any, index: number) => {
@@ -1224,6 +1263,9 @@ function App() {
                 {maimaiB50Charts
                   .filter((item: any) => {
                     const chartVer = item?.version ? String(item.version).toLowerCase() : ''
+                    if (chartVer && omittedVersionLower.includes(chartVer)) {
+                      return false
+                    }
                     return !(chartVer && newVersionLower.includes(chartVer))
                   })
                   .map((item: any, index: number) => {
@@ -1330,7 +1372,7 @@ function App() {
 
               <span className="text-lg text-gray-500 dark:text-gray-400 mt-2">Data</span>
               <List disablePadding>
-                {['Import', 'Export', 'Save Image', 'Clear B50 Data'].map((text) => (
+                {['Import', 'Export', 'Save Image', 'Version', 'Clear B50 Data'].map((text) => (
                   <ListItem key={text} disablePadding>
                     <ListItemButton onClick={() => handleMenuItemClick(text)}>
                       <ListItemIcon>
@@ -1425,6 +1467,37 @@ function App() {
               </div>
             </div>
           </Drawer>
+
+          <Dialog
+            open={versionModalOpen}
+            onClose={() => setVersionModalOpen(false)}
+            data-testid="version-modal"
+          >
+            <DialogContent>
+              <DialogContentText className="mb-4">Select Version</DialogContentText>
+              <div className="flex flex-col gap-2 mt-2">
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectVersion('international')}
+                  data-testid="version-international-btn"
+                >
+                  international
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectVersion('japan')}
+                  data-testid="version-japan-btn"
+                >
+                  japan
+                </Button>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setVersionModalOpen(false)} color="inherit" data-testid="version-modal-close-btn">
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Dialog
             open={gridLayoutModalOpen}
