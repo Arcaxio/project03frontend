@@ -511,6 +511,7 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     expect(screen.getByText('Import')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
     expect(screen.getByText('Save Image')).toBeInTheDocument()
+    expect(screen.getAllByText('Version').length).toBeGreaterThan(0)
     expect(screen.getByText('Clear B50 Data')).toBeInTheDocument()
     expect(screen.getByText('Display: Grid')).toBeInTheDocument()
     expect(screen.getByText('Grid Layout: 10x5')).toBeInTheDocument()
@@ -532,6 +533,38 @@ describe('Drawer, Import, Export, and Clear B50 Data Features', () => {
     const guideItem = screen.getByText('Guide').closest('.MuiListItem-root')
     const githubItem = screen.getByText('Github').closest('.MuiListItem-root')
     expect(guideItem?.nextElementSibling).toBe(githubItem)
+  })
+
+  it('Requirement: "Version" in Drawer opens Version modal with international and japan buttons, and updates maimaiVersion in localStorage', async () => {
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('import-export-button')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('import-export-button'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('drawer')).toBeInTheDocument()
+    })
+
+    const drawer = screen.getByTestId('drawer')
+    const versionItem = drawer.querySelectorAll('.MuiListItemButton-root')[3] // Import, Export, Save Image, Version
+    fireEvent.click(versionItem)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('version-modal')).toBeInTheDocument()
+      expect(screen.getByTestId('version-international-btn')).toBeInTheDocument()
+      expect(screen.getByTestId('version-japan-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('version-international-btn'))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('version-modal')).not.toBeInTheDocument()
+    })
+
+    expect(localStorage.getItem('maimaiVersion')).toBe('international')
   })
 
   it('Requirement: Clicking "Guide" in Drawer opens GuideModal with expected content and close button', async () => {
